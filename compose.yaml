@@ -1,0 +1,80 @@
+# Pick a profile:
+#   local     – only this computer can open it (http://localhost:8000)
+#   server    – HTTPS on your own domain through Caddy (set HISAAB_DOMAIN in .env)
+#   postgres  – also run a PostgreSQL container (combine with local or server)
+#   mysql     – also run a MySQL container (combine with local or server)
+#
+# First run:  docker compose run --rm app hisaab setup --env-file /app/data/.env
+# Then:       docker compose --profile local up -d
+
+name: hisaab
+
+x-app: &app
+  build: .
+  image: hisaab:local
+  restart: unless-stopped
+  volumes:
+    - ./data:/app/data
+
+services:
+  app:
+    <<: *app
+    profiles: ["local"]
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  app-server:
+    <<: *app
+    profiles: ["server"]
+    environment:
+      HISAAB_COOKIE_SECURE: "true"
+      HISAAB_FORWARDED_ALLOW_IPS: "*"
+    expose: ["8000"]
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["server"]
+    restart: unless-stopped
+    depends_on: [app-server]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      HISAAB_DOMAIN: ${HISAAB_DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hisaab
+      POSTGRES_DB: hisaab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hisaab"]
+      interval: 5s
+      retries: 20
+
+  mysql:
+    image: mysql:8.4
+    profiles: ["mysql"]
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: hisaab
+      MYSQL_USER: hisaab
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      retries: 30
+
+volumes:
+  caddy_data:
+  caddy_config:
