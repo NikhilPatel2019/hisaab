@@ -1,0 +1,24 @@
+# secrets and data never go to git
+.env
+.env.*
+!.env.example
+data/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# web
+node_modules/
+frontend/dist/
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo

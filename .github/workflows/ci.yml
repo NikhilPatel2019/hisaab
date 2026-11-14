@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend · ${{ matrix.db }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db: sqlite
+            url: ""
+          - db: postgres
+            url: postgresql://hisaab:hisaab@127.0.0.1:5432/hisaab_test
+          - db: mysql
+            url: mysql://hisaab:hisaab@127.0.0.1:3306/hisaab_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hisaab
+          POSTGRES_PASSWORD: hisaab
+          POSTGRES_DB: hisaab_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hisaab" --health-interval 5s --health-retries 20
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: hisaab_test
+          MYSQL_USER: hisaab
+          MYSQL_PASSWORD: hisaab
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1" --health-interval 5s --health-retries 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest
+        env:
+          HISAAB_TEST_DATABASE_URL: ${{ matrix.url }}
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image
+        run: docker compose build app
+      - name: Refuses to listen publicly without a password
+        run: |
+          set +e
+          out=$(docker run --rm hisaab:local hisaab serve 2>&1)
+          code=$?
+          set -e
+          echo "$out"
+          test "$code" -eq 3
+          echo "$out" | grep -q "Refusing to listen"
+      - name: Setup wizard, then the local profile boots
+        run: |
+          mkdir -p data && sudo chown 1000:1000 data
+          echo "a long ci password" | docker compose run --rm -T app \
+            hisaab setup --env-file /app/data/.env --host 127.0.0.1 --password-stdin \
+            --database-url sqlite:///./data/hisaab.db
+          docker compose --profile local up -d
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/health && break; sleep 2; done
+          curl -fsS http://127.0.0.1:8000/ | grep -q '<div id="root">'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/api/me)" = 401
+      - name: Logs
+        if: always()
+        run: docker compose --profile local logs

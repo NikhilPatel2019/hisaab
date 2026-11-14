@@ -1,0 +1,7 @@
+# Caddy gets and renews a TLS certificate for your domain automatically.
+# Point an A record for HISAAB_DOMAIN at this server before starting.
+{$HISAAB_DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy app-server:8000
+}
