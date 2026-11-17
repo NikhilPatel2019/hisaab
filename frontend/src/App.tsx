@@ -1,9 +1,14 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
-import { ApiError, api, type Me, type SessionState } from "./api";
+import { ApiError, api, type SessionState } from "./api";
+import { AccountDetail } from "./pages/AccountDetail";
+import { Accounts } from "./pages/Accounts";
+import { Home } from "./pages/Home";
+import { Import } from "./pages/Import";
+import { Settings } from "./pages/Settings";
+import { Transactions } from "./pages/Transactions";
+import { Link, match, useLocation } from "./router";
 import { applyTheme, loadTheme, type Theme } from "./theme";
-
-const NAV = ["Home", "Spend", "Invest", "Tax", "Goals", "Ask", "Wrapped"];
 
 const SUN =
   "M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z";
@@ -152,86 +157,69 @@ function SetupNeeded({ toggle }: { toggle: React.ReactNode }) {
   );
 }
 
-const NEXT = [
-  { m: "M1", t: "Ledger and first dashboard", d: "Accounts, transactions, CSV import, net worth." },
-  { m: "M2", t: "Statement vault", d: "Originals kept exactly as the bank sent them." },
-  { m: "M3", t: "Holdings from your CAS", d: "Mutual funds and shares, priced daily." },
+const NAV: [string, string][] = [
+  ["Home", "/"],
+  ["Accounts", "/accounts"],
+  ["Transactions", "/transactions"],
+  ["Import", "/import"],
 ];
 
 function Shell({ toggle, onLogout }: { toggle: React.ReactNode; onLogout: () => void }) {
-  const [me, setMe] = useState<Me | null>(null);
-  useEffect(() => {
-    api.me().then(setMe).catch(onLogout);
-  }, [onLogout]);
+  const { path } = useLocation();
+  const accountMatch = match("/accounts/:id", path);
+  let page: React.ReactNode;
+  if (path === "/") page = <Home />;
+  else if (path === "/accounts") page = <Accounts />;
+  else if (accountMatch && /^\d+$/.test(accountMatch.id)) page = <AccountDetail id={Number(accountMatch.id)} />;
+  else if (path === "/transactions") page = <Transactions />;
+  else if (path === "/import") page = <Import />;
+  else if (path === "/settings") page = <Settings onLogout={onLogout} />;
+  else
+    page = (
+      <div className="hero stack">
+        <span className="d" style={{ fontSize: 28, fontWeight: 800 }}>Nothing here</span>
+        <Link href="/" className="btnp" style={{ alignSelf: "flex-start" }}>Go home</Link>
+      </div>
+    );
+
+  const current = NAV.slice()
+    .reverse()
+    .find(([, href]) => (href === "/" ? path === "/" : path.startsWith(href)))?.[1];
 
   return (
     <>
+      <a href="#main" className="sr-only">Skip to content</a>
       <header className="topbar">
-        <Brand />
+        <Link href="/" className="brand" aria-label="hisaab home">
+          <span className="brand-mark d">h</span>
+          <span className="d" style={{ fontSize: 20, fontWeight: 700 }}>hisaab</span>
+        </Link>
         <nav className="nav" aria-label="Main">
-          {NAV.map((n, i) => (
-            <span key={n} aria-current={i === 0 ? "page" : undefined} title={i === 0 ? undefined : "Coming in a later milestone"}>
-              {n}
-            </span>
+          {NAV.map(([label, href]) => (
+            <Link key={href} href={href} aria-current={current === href ? "page" : undefined}>
+              {label}
+            </Link>
           ))}
         </nav>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           {toggle}
-          <button type="button" className="btns" onClick={() => api.logout().finally(onLogout)}>
-            Log out
-          </button>
+          <Link href="/settings" className="icon-btn" aria-label="Settings" title="Settings" aria-current={path === "/settings" ? "page" : undefined}>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
         </div>
       </header>
-      <main className="page">
-        <div>
-          <span className="cap">hisaab {me?.version ?? ""}</span>
-          <h1 className="d" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 800, letterSpacing: -0.8 }}>
-            You’re in.
-          </h1>
-        </div>
-        <div className="grid">
-          <section className="hero s8" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <span className="cap">Your setup</span>
-            <span className="d" style={{ fontSize: 44, fontWeight: 800, letterSpacing: -1.2 }}>
-              Ready for your data.
-            </span>
-            <span className="body">
-              Nothing has been imported yet. Everything you add stays in your own database.
-            </span>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-              <span className="chip" style={{ background: "var(--acc-tint)", color: "var(--acc-ink)" }}>
-                ✓ Database: {me?.database ?? "…"}
-              </span>
-              <span
-                className="chip"
-                style={
-                  me?.secrets_enabled
-                    ? { background: "var(--acc-tint)", color: "var(--acc-ink)" }
-                    : { background: "var(--warn-tint)", color: "var(--warn-ink)" }
-                }
-              >
-                {me?.secrets_enabled ? "✓ Secrets encrypted" : "Secret key missing"}
-              </span>
-            </div>
-          </section>
-          <section className="card s4">
-            <h2 className="d" style={{ margin: "0 0 12px", fontSize: 18 }}>
-              Coming next
-            </h2>
-            {NEXT.map((x) => (
-              <div key={x.m} style={{ display: "grid", gridTemplateColumns: "40px 1fr", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--sep)" }}>
-                <span className="chip" style={{ background: "var(--raised)", color: "var(--ink3)", justifyContent: "center" }}>
-                  {x.m}
-                </span>
-                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{x.t}</span>
-                  <span className="sub">{x.d}</span>
-                </span>
-              </div>
-            ))}
-          </section>
-        </div>
+      <main id="main" className="page" key={path}>
+        {page}
       </main>
+      <nav className="nav-mobile" aria-label="Main (mobile)">
+        {NAV.map(([label, href]) => (
+          <Link key={href} href={href} aria-current={current === href ? "page" : undefined}>
+            {label}
+          </Link>
+        ))}
+      </nav>
     </>
   );
 }

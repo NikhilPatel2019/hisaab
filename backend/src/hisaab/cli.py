@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import json
 import secrets
 import sys
 import time
+from datetime import date
 from pathlib import Path
 from typing import TextIO
 
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from hisaab import __version__
 from hisaab.config import DEFAULT_DATABASE_URL, Settings, get_settings
@@ -218,6 +221,73 @@ def cmd_hash_password(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _session() -> Session:
+    from hisaab.db import make_sessionmaker
+
+    return make_sessionmaker(make_engine(get_settings().database_url))()
+
+
+def _today() -> date:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return datetime.now(ZoneInfo(get_settings().timezone)).date()
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    from hisaab.ledger.backup import ledger_is_empty
+    from hisaab.ledger.demo import load_demo, remove_demo
+
+    with _session() as s:
+        if args.remove:
+            print(f"✓ Removed {remove_demo(s)} demo accounts and everything in them.")
+            return 0
+        if not ledger_is_empty(s):
+            print("✗ Demo data only loads into an empty ledger.", file=sys.stderr)
+            return 2
+        r = load_demo(s, _today())
+    print(
+        f"✓ Loaded a fictional household: {r['accounts']} accounts, "
+        f"{r['transactions']} transactions. Remove with `hisaab demo --remove`."
+    )
+    return 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    from hisaab.ledger.backup import export_all
+
+    with _session() as s:
+        data = json.dumps(export_all(s), ensure_ascii=False, indent=1)
+    if args.file == "-":
+        sys.stdout.write(data + "\n")
+    else:
+        Path(args.file).write_text(data, encoding="utf-8")
+        print(f"✓ Wrote {args.file}", file=sys.stderr)
+    return 0
+
+
+def cmd_restore(args: argparse.Namespace) -> int:
+    from hisaab.ledger.backup import BackupError, restore_all
+
+    data = json.loads(Path(args.file).read_text(encoding="utf-8"))
+    with _session() as s:
+        try:
+            r = restore_all(s, data, replace=args.replace)
+        except BackupError as exc:
+            print(f"✗ {exc}", file=sys.stderr)
+            return 2
+    print(f"✓ Restored {r['accounts']} accounts and {r['transactions']} transactions.")
+    return 0
+
+
+def cmd_openapi(_args: argparse.Namespace) -> int:
+    from hisaab.main import create_app
+
+    settings = Settings(_env_file=None, database_url="sqlite://")  # type: ignore[call-arg]
+    print(json.dumps(create_app(settings).openapi(), indent=1, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hisaab", description="Self-hosted finance dashboard.")
     p.add_argument("--version", action="version", version=__version__)
@@ -243,6 +313,22 @@ def build_parser() -> argparse.ArgumentParser:
         func=cmd_migrate
     )
     sub.add_parser("check", help="show configuration (never secrets)").set_defaults(func=cmd_check)
+    d = sub.add_parser("demo", help="load (or --remove) a fictional household to explore")
+    d.add_argument("--remove", action="store_true")
+    d.set_defaults(func=cmd_demo)
+
+    e = sub.add_parser("export", help="write a JSON backup of the ledger")
+    e.add_argument("file", nargs="?", default="-", help="path, or - for stdout")
+    e.set_defaults(func=cmd_export)
+
+    r = sub.add_parser("restore", help="load a JSON backup into this database")
+    r.add_argument("file")
+    r.add_argument("--replace", action="store_true", help="wipe existing ledger data first")
+    r.set_defaults(func=cmd_restore)
+
+    sub.add_parser("openapi", help="print the API schema (used to type the web app)").set_defaults(
+        func=cmd_openapi
+    )
     sub.add_parser("hash-password", help="print an argon2 hash").set_defaults(
         func=cmd_hash_password
     )

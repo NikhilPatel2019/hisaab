@@ -18,6 +18,7 @@ from hisaab import __version__
 from hisaab.api import private, public
 from hisaab.config import Settings, get_settings
 from hisaab.db import make_engine, make_sessionmaker
+from hisaab.ledger.api import router as ledger_router
 from hisaab.secretstore import SecretBox
 from hisaab.security import LoginLimiter
 
@@ -109,6 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(public)
     app.include_router(private)
+    app.include_router(ledger_router)
 
     if settings.static_dir and Path(settings.static_dir, "index.html").is_file():
         app.mount("/", SPAStaticFiles(directory=settings.static_dir, html=True), name="web")

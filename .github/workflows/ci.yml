@@ -74,6 +74,58 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: API types match the backend
+        run: |
+          (cd ../backend && uv sync --locked)
+          npm run gen:api
+          git diff --exit-code src/api/schema.d.ts || (echo "Run 'npm run gen:api' and commit." && exit 1)
+
+  e2e:
+    name: browser smoke test (demo data)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the web app
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund && npm run build
+      - name: Start hisaab with demo data
+        working-directory: backend
+        run: |
+          uv sync --locked
+          echo "a long ci password" | uv run hisaab setup --env-file ../.env.ci \
+            --database-url sqlite:///$RUNNER_TEMP/hisaab.db --host 127.0.0.1 --password-stdin
+          echo "HISAAB_STATIC_DIR=$GITHUB_WORKSPACE/frontend/dist" >> ../.env.ci
+          export HISAAB_ENV_FILE=../.env.ci
+          uv run hisaab migrate && uv run hisaab demo
+          nohup uv run hisaab serve > $RUNNER_TEMP/serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/health && break; sleep 1; done
+      - name: Open every page
+        working-directory: frontend
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+          mkdir -p e2e/out
+          HISAAB_URL=http://127.0.0.1:8000 HISAAB_PASSWORD="a long ci password" node e2e/smoke.mjs e2e/out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: frontend/e2e/out
+      - name: Server log
+        if: failure()
+        run: cat $RUNNER_TEMP/serve.log
 
   docker:
     needs: [backend, frontend]
