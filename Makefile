@@ -1,6 +1,6 @@
 BACKEND := uv run --project backend
 
-.PHONY: help setup dev dev-api dev-web run test test-api test-web lint fix build docker-setup docker-up
+.PHONY: help setup dev dev-api dev-web run demo backup gen-api test test-api test-web lint fix build docker-setup docker-up
 
 help: ## show this list
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-13s %s\n", $$1, $$2}'
@@ -22,6 +22,16 @@ dev-web:
 
 run: build ## build the web app and serve everything on :8000
 	HISAAB_STATIC_DIR=frontend/dist $(BACKEND) hisaab serve
+
+demo: ## load a fictional household to explore (remove with: hisaab demo --remove)
+	$(BACKEND) hisaab demo
+
+backup: ## write a JSON backup to backups/
+	mkdir -p backups
+	$(BACKEND) hisaab export backups/hisaab-$$(date +%F).json
+
+gen-api: ## regenerate the web app's API types after changing the backend
+	cd frontend && npm run gen:api
 
 build: ## build the web app
 	cd frontend && npm run build

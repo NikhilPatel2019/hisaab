@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
 from hisaab.config import Settings
+from hisaab.ledger.backup import wipe_ledger
 from hisaab.main import create_app
 from hisaab.migrate import downgrade, upgrade
 from hisaab.models import Secret
@@ -54,6 +55,7 @@ def client(settings: Settings) -> Iterator[TestClient]:
     app = create_app(settings)
     with app.state.sessionmaker() as s:
         s.execute(delete(Secret))
+        wipe_ledger(s)
         s.commit()
     with TestClient(app) as c:
         yield c

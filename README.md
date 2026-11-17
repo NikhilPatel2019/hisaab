@@ -6,10 +6,29 @@ Bank and card statements, mutual funds, shares, tax and goals in one place, and 
 hisaab is a template, not a service. There is no hisaab cloud, no sign-up and no telemetry.
 You clone it, run it on your laptop or your own server, and point it at a database you control.
 
-> **Status: M0 — the skeleton.** Login, database setup, encrypted secrets, Docker and CI work.
-> The ledger and dashboards arrive from M1 onwards (see [Roadmap](#roadmap)).
+> **Status: M1 — the ledger.** Accounts, transactions, CSV import, net worth and cashflow work.
+> Statement PDFs, your CAS and broker sync arrive from M2 onwards (see [Roadmap](#roadmap)).
 
 ## What you get today
+
+**Your money, in one place**
+
+- Accounts of every kind: banks, cards, deposits, investments, EPF/PPF/NPS, property, loans.
+  Track each one by **transactions** or, for things like EPF and FDs, by **value** you update now and then.
+- **CSV import** from Indian bank and card exports. It finds the header under the bank's preamble,
+  reads day-first dates, `1,23,456.78`, `Dr`/`Cr`, separate debit/credit columns and newest-first files.
+  - Importing the same file twice adds **nothing**; overlapping exports only add what's new.
+  - If the file has a running balance, the first import sets your opening balance from it and every
+    import checks the result **adds up** to the paisa.
+  - Every import can be undone.
+- **Home dashboard**: net worth over 6 or 12 months, totals by account group, this month's spending
+  against the same day last month, where it went, and money in/out/invested for six months.
+- Categories made for Indian life (rent, food delivery, SIPs, EPF, card bill payments…). Transfers
+  between your own accounts and card bill payments are never counted as spending twice.
+- **Backups** as one JSON file that restores into any supported database, and a **demo household**
+  (`make demo`) to look around before adding your own data.
+
+**Private by design**
 
 - One command to set up: choose where your data lives, set a password, keys are generated for you.
 - Works with **SQLite** (default, nothing to install), **PostgreSQL**, **Supabase** or **MySQL/MariaDB**,
@@ -31,6 +50,9 @@ cd hisaab
 make setup     # installs dependencies, asks a few questions, writes .env
 make run       # builds the web app and serves everything on http://127.0.0.1:8000
 ```
+
+Want to look around first? `make demo` loads a made-up household (every shop and number is invented).
+Remove it later from Settings or with `uv run --project backend hisaab demo --remove`.
 
 For development with live reload, use `make dev` and open http://localhost:5173.
 
@@ -67,6 +89,17 @@ To run a bundled database with Docker, add `--profile postgres` or `--profile my
 Caddy fetches and renews the HTTPS certificate, and cookies are marked secure.
 The app is only reachable through Caddy; port 8000 isn't published.
 
+## Importing a CSV
+
+1. Add the account (Accounts → Add an account). Leave the opening balance empty if your export has a
+   running-balance column.
+2. Import → pick the account → drop the CSV. Check the preview: money out should show without a `+`.
+   If the columns or date format look wrong, open "Columns we picked" and change them.
+3. Import. Re-import whenever you like; duplicates are skipped.
+
+Card exports often list spends as positive numbers; hisaab flips them automatically for credit-card
+accounts (and leaves rows marked `Cr` alone). PDFs and automatic statement fetching come in M2 and M5.
+
 ## Commands
 
 | | |
@@ -75,6 +108,9 @@ The app is only reachable through Caddy; port 8000 isn't published.
 | `hisaab serve` | Wait for the database, run migrations, start the server. |
 | `hisaab migrate` | Bring the schema up to date. |
 | `hisaab check` | Show the configuration without revealing secrets. |
+| `hisaab demo` | Load a fictional household into an empty ledger (`--remove` takes it out). |
+| `hisaab export [file]` | Write a JSON backup of every account, transaction and balance. |
+| `hisaab restore file` | Load a backup into this database (empty, or `--replace`). Works across SQLite, Postgres and MySQL. |
 | `make test` / `make lint` | Run the test suites / linters and type checks. |
 
 ## Security notes
@@ -88,8 +124,8 @@ The app is only reachable through Caddy; port 8000 isn't published.
 
 | | Milestone |
 |---|---|
-| **M0** | Skeleton, login, three-database CI ← *you are here* |
-| M1 | Ledger, CSV import, first net-worth dashboard |
+| M0 | Skeleton, login, three-database CI ✓ |
+| **M1** | Ledger, CSV import, first net-worth dashboard ← *you are here* |
 | M2 | Statement vault (originals kept untouched) |
 | M3 | Holdings from your CDSL/NSDL CAS |
 | M4 | Connectors and the nightly sync |

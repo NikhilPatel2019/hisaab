@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     login_window_seconds: int = 300
     forwarded_allow_ips: str = "127.0.0.1"
 
+    # Used for "today" (month boundaries, the dashboard).
+    timezone: str = "Asia/Kolkata"
+
     # Built frontend. When set and present, the API also serves the web app.
     static_dir: str | None = None
 
