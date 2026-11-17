@@ -317,6 +317,33 @@ def existing_hashes(session: Session, account_id: int, hashes: list[str]) -> set
 # --- preview and import ---------------------------------------------------------------------
 
 
+def check_mapping(table: list[list[str]], m: Mapping) -> None:
+    """A mapping sent by a client must fit this file."""
+    if m.header_row is not None and m.header_row >= len(table):
+        raise ImportProblem("The header row is past the end of the file.")
+    width = max(len(r) for r in table)
+    cols = [
+        m.date_col,
+        *m.description_cols,
+        m.amount_col,
+        m.debit_col,
+        m.credit_col,
+        m.type_col,
+        m.balance_col,
+        m.reference_col,
+        m.category_col,
+    ]
+    if any(c is not None and c >= width for c in cols):
+        raise ImportProblem("A chosen column isn't in this file.")
+    needed = {
+        "single": [m.amount_col],
+        "split": [m.debit_col, m.credit_col],
+        "type": [m.amount_col, m.type_col],
+    }[m.amount_mode]
+    if any(c is None for c in needed):
+        raise ImportProblem("Pick the amount columns for this layout.")
+
+
 class PreviewRow(BaseModel):
     line: int
     posted_on: date
@@ -344,6 +371,7 @@ def preview(session: Session, account: Account, content: str, mapping: Mapping |
     if not table:
         raise ImportProblem("That file is empty.")
     m = mapping or suggest_mapping(table)
+    check_mapping(table, m)
     if mapping is None and account.kind == "credit_card" and m.amount_mode == "single":
         # Card exports usually list spends as positive numbers. Flip them so a spend is
         # money out, unless most rows are already negative.
@@ -406,6 +434,9 @@ def run_import(
     session: Session, account: Account, filename: str, content: str, m: Mapping
 ) -> ImportResult:
     table = read_table(content)
+    if not table:
+        raise ImportProblem("That file is empty.")
+    check_mapping(table, m)
     parsed = parse_rows(table, m)
     if not parsed.rows:
         raise ImportProblem("No transactions found with this mapping. Check the date column.")

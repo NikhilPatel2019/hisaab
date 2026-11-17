@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ApiError, request } from "./api";
 import { niceTicks } from "./components/Charts";
-import { compact, formatINR, money, parseRupees } from "./format";
+import { compact, formatINR, money, parseRupees, todayISO } from "./format";
 import { match } from "./router";
 
 describe("formatINR", () => {
@@ -48,6 +48,10 @@ describe("money helpers", () => {
     expect(compact(1250000_00)).toBe("₹12.5L");
     expect(compact(45000_00)).toBe("₹45k");
     expect(compact(12000000_00)).toBe("₹1.2Cr");
+  });
+  it("uses the local date, not UTC's", () => {
+    // 1:30 AM on 18 Nov in India is still 17 Nov in UTC.
+    expect(todayISO(new Date(2026, 10, 18, 1, 30))).toBe("2026-11-18");
   });
   it("reads what people type", () => {
     expect(parseRupees("1,23,456.78")).toBe(12345678);

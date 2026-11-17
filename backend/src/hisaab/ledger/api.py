@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -62,6 +62,19 @@ def _get(db: Session, model: type[Any], id_: int, what: str) -> Any:
     return obj
 
 
+class _Patch(BaseModel):
+    """PATCH bodies: leave a field out to keep it; null is only allowed where it means 'clear'."""
+
+    not_null: ClassVar[tuple[str, ...]] = ()
+
+    @model_validator(mode="after")
+    def _no_nulls(self) -> _Patch:
+        for name in self.not_null:
+            if name in self.model_fields_set and getattr(self, name) is None:
+                raise ValueError(f"{name} can't be empty")
+        return self
+
+
 # --- accounts -------------------------------------------------------------------------------
 
 
@@ -80,7 +93,8 @@ class AccountIn(BaseModel):
         return v.strip()
 
 
-class AccountPatch(BaseModel):
+class AccountPatch(_Patch):
+    not_null = ("name", "opening_balance_paise", "archived")
     name: str | None = Field(default=None, min_length=1, max_length=100)
     institution: str | None = Field(default=None, max_length=100)
     mask: str | None = Field(default=None, max_length=8)
@@ -252,7 +266,8 @@ class TxnIn(BaseModel):
     notes: str | None = None
 
 
-class TxnPatch(BaseModel):
+class TxnPatch(_Patch):
+    not_null = ("posted_on", "amount_paise", "description")
     posted_on: date | None = None
     amount_paise: int | None = None
     description: str | None = Field(default=None, min_length=1, max_length=500)
@@ -308,12 +323,12 @@ def list_transactions(
     if uncategorised:
         filters.append(Transaction.category_id.is_(None))
     if q:
-        like = f"%{q.lower()}%"
+        needle = q.lower()  # matched literally: % and _ are not wildcards here
         filters.append(
             or_(
-                func.lower(Transaction.description).like(like),
-                func.lower(func.coalesce(Transaction.payee, "")).like(like),
-                func.lower(func.coalesce(Transaction.notes, "")).like(like),
+                func.lower(Transaction.description).contains(needle, autoescape=True),
+                func.lower(func.coalesce(Transaction.payee, "")).contains(needle, autoescape=True),
+                func.lower(func.coalesce(Transaction.notes, "")).contains(needle, autoescape=True),
             )
         )
     if date_from:

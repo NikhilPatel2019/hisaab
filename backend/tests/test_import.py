@@ -163,3 +163,16 @@ def test_balance_accounts_cannot_import(logged_in: TestClient) -> None:
     )
     body = {"account_id": r.json()["id"], "filename": "x.csv", "content": CARD}
     assert logged_in.post("/api/imports/preview", json=body, headers=CSRF).status_code == 422
+
+
+def test_bad_mapping_from_a_client_is_a_clear_error(logged_in: TestClient) -> None:
+    acct = _account(logged_in)
+    body = {"account_id": acct, "filename": "x.csv", "content": BANK_TYPE}
+    m = logged_in.post("/api/imports/preview", json=body, headers=CSRF).json()["mapping"]
+    for bad in ({"header_row": 99}, {"amount_col": 42}, {"amount_mode": "split"}):
+        r = logged_in.post(
+            "/api/imports/preview", json={**body, "mapping": {**m, **bad}}, headers=CSRF
+        )
+        assert r.status_code == 422, bad
+        r = logged_in.post("/api/imports", json={**body, "mapping": {**m, **bad}}, headers=CSRF)
+        assert r.status_code == 422, bad

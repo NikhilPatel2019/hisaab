@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 
 import { type Account, type Category, client, ok, type Txn } from "../api/client";
 import { Amount, Chip, Drawer, ErrorBox, Field, Loading, PageHead } from "../components/ui";
-import { money, parseRupees, shortDate } from "../format";
+import { money, parseRupees, shortDate, todayISO } from "../format";
 import { useAsync } from "../hooks";
 import { navigate, useLocation } from "../router";
 
@@ -252,7 +252,7 @@ function TxnForm({
   onSaved: () => void;
 }) {
   const [accountId, setAccountId] = useState<number | null>(existing?.account_id ?? defaultAccount ?? accounts[0]?.id ?? null);
-  const [postedOn, setPostedOn] = useState(existing?.posted_on ?? new Date().toISOString().slice(0, 10));
+  const [postedOn, setPostedOn] = useState(existing?.posted_on ?? todayISO());
   const [direction, setDirection] = useState<"out" | "in">(existing && existing.amount_paise > 0 ? "in" : "out");
   const [amount, setAmount] = useState(existing ? String(Math.abs(existing.amount_paise) / 100) : "");
   const [description, setDescription] = useState(existing?.description ?? "");
