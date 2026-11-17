@@ -205,6 +205,7 @@ def cmd_check(_args: argparse.Namespace) -> int:
         ("Password set", "yes" if s.password_hash else "no"),
         ("Session secret", "set" if s.session_secret else "missing"),
         ("Secret key", "set" if s.secret_key else "missing"),
+        ("Statement vault", str(Path(s.vault_dir).resolve())),
     ]
     for k, v in rows:
         print(f"{k:16} {v}")
@@ -280,6 +281,59 @@ def cmd_restore(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest(args: argparse.Namespace) -> int:
+    from sqlalchemy import select
+
+    from hisaab.db import make_sessionmaker
+    from hisaab.docs.connectors import ConnectorError, FolderSource, run_connector, run_source
+    from hisaab.docs.ingest import reprocess
+    from hisaab.docs.vault import Vault
+    from hisaab.models import Connector
+    from hisaab.secretstore import SecretBox
+
+    settings = get_settings()
+    factory = make_sessionmaker(make_engine(settings.database_url))
+    vault = Vault(settings.vault_dir)
+    box = SecretBox(settings.secret_key) if settings.secret_key else None
+    failed = False
+
+    if args.folder:
+        with factory() as s:
+            try:
+                summary = run_source(s, vault, box, FolderSource(args.folder))
+            except ConnectorError as exc:
+                print(f"✗ {exc}", file=sys.stderr)
+                return 2
+        print(f"✓ {args.folder}: {summary.text()}")
+    elif args.reprocess:
+        with factory() as s:
+            r = reprocess(s, vault, box)
+        print(
+            f"✓ Checked {r['checked']} documents: {r['unlocked']} unlocked, {r['changed']} refiled."
+        )
+    else:
+        with factory() as s:
+            conns = list(s.scalars(select(Connector).order_by(Connector.id)))
+        if args.connector:
+            conns = [c for c in conns if args.connector in (str(c.id), c.name)]
+            if not conns:
+                print(f"✗ No connection called {args.connector}.", file=sys.stderr)
+                return 2
+        else:
+            conns = [c for c in conns if c.enabled]
+        if not conns:
+            print("Nothing to sync. Add a connection in Settings, or use --folder PATH.")
+            return 0
+        for c in conns:
+            summary = run_connector(factory, vault, box, c.id)
+            if summary.errors:
+                failed = True
+                print(f"✗ {c.name}: {summary.errors[0]}", file=sys.stderr)
+            else:
+                print(f"✓ {c.name}: {summary.text()}")
+    return 1 if failed else 0
+
+
 def cmd_openapi(_args: argparse.Namespace) -> int:
     from hisaab.main import create_app
 
@@ -325,6 +379,12 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("file")
     r.add_argument("--replace", action="store_true", help="wipe existing ledger data first")
     r.set_defaults(func=cmd_restore)
+
+    g = sub.add_parser("ingest", help="fetch statements from your connections into the vault")
+    g.add_argument("--connector", help="only this connection (id or name)")
+    g.add_argument("--folder", help="bring in every PDF from a folder, once")
+    g.add_argument("--reprocess", action="store_true", help="retry passwords and refile everything")
+    g.set_defaults(func=cmd_ingest)
 
     sub.add_parser("openapi", help="print the API schema (used to type the web app)").set_defaults(
         func=cmd_openapi

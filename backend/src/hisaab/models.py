@@ -189,3 +189,105 @@ class BalanceSnapshot(Base):
     balance_paise: Mapped[int] = mapped_column(BigInteger)
     source: Mapped[str] = mapped_column(String(20), default="manual")
     note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+
+# --- documents (statements, CAS, tax forms) -------------------------------------------------
+
+DOC_KINDS = (
+    "bank_statement",
+    "card_statement",
+    "cas",
+    "broker",
+    "tax",
+    "payslip",
+    "insurance",
+    "other",
+    "unknown",
+)
+DOC_STATUSES = ("needs_password", "needs_review", "filed", "ignored")
+DOC_SOURCES = ("upload", "drive", "imap", "folder")
+
+
+class Document(Base):
+    """One unique file, stored once in the vault exactly as received (named by its SHA-256).
+
+    Decrypted copies are never stored: they're made in memory when you open one.
+    """
+
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    filename: Mapped[str] = mapped_column(String(255))
+    mime: Mapped[str] = mapped_column(String(100), default="application/pdf")
+    source: Mapped[str] = mapped_column(String(20))
+    sender: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    subject: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    encrypted: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Which stored password or recipe opened it. An id, never the password itself.
+    unlocked_with: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="needs_review")
+    kind: Mapped[str] = mapped_column(String(20), default="unknown")
+    institution: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    account_id: Mapped[int | None] = mapped_column(
+        ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
+    )
+    period_start: Mapped[date | None] = mapped_column(Date, nullable=True)
+    period_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    classified_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DocumentSighting(Base):
+    """Every time a source showed us a file. Lets re-runs skip what they've already seen,
+    and counts duplicates (the same PDF from Drive and from email is stored once)."""
+
+    __tablename__ = "document_sightings"
+    __table_args__ = (UniqueConstraint("source", "source_ref"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=True
+    )
+    source: Mapped[str] = mapped_column(String(20))
+    source_ref: Mapped[str] = mapped_column(String(400))
+    outcome: Mapped[str] = mapped_column(String(20))
+    seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Connector(Base):
+    __tablename__ = "connectors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    name: Mapped[str] = mapped_column(String(100))
+    # Non-secret settings as JSON. Credentials live in the encrypted secret store.
+    config: Mapped[str] = mapped_column(Text, default="{}")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    last_summary: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DocRule(Base):
+    """'Always file PDFs like this as …'. Every condition given must match."""
+
+    __tablename__ = "doc_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100))
+    match_sender: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    match_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    match_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    institution: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    account_id: Mapped[int | None] = mapped_column(
+        ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

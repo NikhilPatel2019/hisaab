@@ -10,10 +10,15 @@ dependencies = [
     "argon2-cffi>=23.1",
     "cryptography>=43",
     "fastapi>=0.115",
+    "google-auth>=2.30",
+    "imap-tools>=1.7",
     "itsdangerous>=2.2",
     "psycopg[binary]>=3.2",
     "pydantic-settings>=2.4",
     "pymysql>=1.1",
+    "pypdf>=6.0",
+    "python-multipart>=0.0.18",
+    "requests>=2.32",
     "sqlalchemy>=2.0.30",
     "uvicorn[standard]>=0.30",
 ]
@@ -45,7 +50,7 @@ select = ["E", "F", "I", "B", "UP", "S", "SIM"]
 ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S104", "S105", "S106", "E501"]
+"tests/**" = ["S104", "S105", "S106", "S107", "E501"]
 
 [tool.mypy]
 python_version = "3.12"

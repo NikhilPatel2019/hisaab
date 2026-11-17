@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../api";
 import { client, ok } from "../api/client";
 import { Chip, ErrorBox, PageHead } from "../components/ui";
 import { useAsync } from "../hooks";
+import { Connections, StatementPasswords } from "./SettingsPostbox";
 
 export function Settings({ onLogout }: { onLogout: () => void }) {
   const me = useAsync(() => api.me(), []);
@@ -12,6 +13,12 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const demoCount = (accounts.data ?? []).filter((a) => a.is_demo).length;
   const empty = accounts.data?.length === 0;
+
+  // Links like /settings#connections land on that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
+  }, []);
 
   async function demo(load: boolean) {
     setErr(null);
@@ -40,13 +47,17 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
       )}
       {err && <ErrorBox message={err} />}
       <div className="grid">
+        <Connections />
+        <StatementPasswords />
+
         <section className="card s6 stack" aria-labelledby="backup">
           <h2 id="backup" className="d h2">
             Backup
           </h2>
           <p className="body" style={{ margin: 0 }}>
             One JSON file with every account, transaction and balance. It restores into any supported database with{" "}
-            <code>hisaab restore</code>. Stored secrets stay out of it.
+            <code>hisaab restore</code>. Stored secrets stay out of it. Original statements live in the vault folder
+            (<code>data/vault</code>): copy that folder too.
           </p>
           <a className="btnp" href="/api/export" download style={{ alignSelf: "flex-start" }}>
             Download a backup

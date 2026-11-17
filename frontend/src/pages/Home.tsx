@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { client, type Dashboard, ok } from "../api/client";
+import { client, type Dashboard, type DocStats, ok } from "../api/client";
 import { BarChart, LineChart } from "../components/Charts";
 import { Amount, Chip, Delta, Empty, ErrorBox, Loading, PageHead } from "../components/ui";
 import { compact, longDate, money, monthLabel, shortDate } from "../format";
@@ -15,6 +15,7 @@ function greeting(): string {
 export function Home() {
   const [range, setRange] = useState<6 | 12>(12);
   const dash = useAsync(() => ok(client.GET("/api/dashboard", { params: { query: { months: 12 } } })), []);
+  const docs = useAsync(() => ok(client.GET("/api/documents/stats")), []);
 
   if (dash.error) return <ErrorBox message={dash.error} onRetry={dash.reload} />;
   if (!dash.data) return <Loading />;
@@ -72,7 +73,7 @@ export function Home() {
           />
         </section>
 
-        <NeedsYou d={d} />
+        <NeedsYou d={d} docs={docs.data} />
 
         <div className="s12" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 20 }}>
           {d.groups.map((g) => (
@@ -185,8 +186,18 @@ export function Home() {
   );
 }
 
-function NeedsYou({ d }: { d: Dashboard }) {
+function NeedsYou({ d, docs }: { d: Dashboard; docs?: DocStats }) {
   const items: { href: string; title: string; sub: string; tone: "acc" | "warn" }[] = [];
+  const waiting = docs ? docs.needs_password + docs.needs_review : 0;
+  if (docs && waiting > 0)
+    items.push({
+      href: "/postbox?f=need",
+      title: `${waiting} statement${waiting === 1 ? "" : "s"} in the postbox`,
+      sub: docs.needs_password
+        ? `${docs.needs_password} locked: add a password once and they open.`
+        : `Tell us what ${waiting === 1 ? "it is" : "they are"}; we’ll remember.`,
+      tone: "warn",
+    });
   if (d.uncategorised > 0)
     items.push({
       href: "/transactions?uncategorised=1",

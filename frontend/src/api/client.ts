@@ -11,6 +11,13 @@ export type Category = S["CategoryOut"];
 export type Dashboard = S["Dashboard"];
 export type Mapping = S["Mapping"];
 export type Preview = S["Preview"];
+export type Doc = S["DocumentOut"];
+export type DocDetail = S["DocumentDetail"];
+export type DocStats = S["DocStats"];
+export type DocKind = Doc["kind"];
+export type UploadResult = S["UploadResult"];
+export type Connector = S["ConnectorOut"];
+export type PasswordState = S["PasswordState"];
 
 const csrf: Middleware = {
   onRequest({ request }) {

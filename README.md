@@ -6,8 +6,9 @@ Bank and card statements, mutual funds, shares, tax and goals in one place, and 
 hisaab is a template, not a service. There is no hisaab cloud, no sign-up and no telemetry.
 You clone it, run it on your laptop or your own server, and point it at a database you control.
 
-> **Status: M1 — the ledger.** Accounts, transactions, CSV import, net worth and cashflow work.
-> Statement PDFs, your CAS and broker sync arrive from M2 onwards (see [Roadmap](#roadmap)).
+> **Status: M2 — the postbox.** Accounts, transactions, CSV import and net worth work, and statement
+> PDFs now arrive from Gmail, Google Drive or a folder into a vault that keeps every original.
+> Reading the numbers out of them, your CAS and broker sync arrive from M3 onwards (see [Roadmap](#roadmap)).
 
 ## What you get today
 
@@ -27,6 +28,19 @@ You clone it, run it on your laptop or your own server, and point it at a databa
   between your own accounts and card bill payments are never counted as spending twice.
 - **Backups** as one JSON file that restores into any supported database, and a **demo household**
   (`make demo`) to look around before adding your own data.
+
+**Postbox: every statement, kept once**
+
+- Statements arrive from **Gmail or any IMAP mailbox** (with an app password), a **Google Drive folder**
+  (read-only service account) or a **folder** on your machine — or just drop PDFs on the page.
+- Each original is stored **exactly as it arrived**, once, read-only and named by its SHA-256. The same
+  file sent twice, or seen in both your mail and Drive, is kept once. Re-running a sync adds nothing.
+- **Locked PDFs open on their own**: save your name, date of birth, PAN or mobile once (encrypted) and
+  hisaab tries the combinations Indian banks use — `NAME0703`, `07031990`, PAN, card digits… It remembers
+  which recipe worked for each sender, never the password, and unlocked copies only ever exist in memory.
+- Bank and card statements, CDSL/NSDL/CAMS/KFintech CAS, contract notes, AIS/26AS/Form 16 and payslips are
+  recognised and matched to your accounts by their last four digits. Anything else waits in
+  **Needs you**; your own filing rules come first.
 
 **Private by design**
 
@@ -98,7 +112,30 @@ The app is only reachable through Caddy; port 8000 isn't published.
 3. Import. Re-import whenever you like; duplicates are skipped.
 
 Card exports often list spends as positive numbers; hisaab flips them automatically for credit-card
-accounts (and leaves rows marked `Cr` alone). PDFs and automatic statement fetching come in M2 and M5.
+accounts (and leaves rows marked `Cr` alone). Reading transactions out of statement PDFs comes in M5.
+
+## Bringing in statements
+
+Open **Settings → Connections** and add one:
+
+- **Gmail / IMAP.** Turn on 2-Step Verification, create an app password (Google Account → Security →
+  App passwords) and paste it with your address. hisaab only reads: it searches for PDF attachments
+  server-side, never marks or moves mail, and by default only downloads from banks, card issuers,
+  depositories and brokers it knows (add your own sender domains if needed).
+- **Google Drive.** Create a service account, enable the Drive API, download its JSON key, and share your
+  statements folder with the service account's email as a Viewer. If another tool replaced a locked PDF
+  with an unlocked copy, hisaab keeps the file's first revision — the original.
+- **Folder.** Any folder on the machine running hisaab.
+
+Then **Settings → Statement passwords**: save the facts banks build passwords from. Press **Sync now**
+on the Postbox, or sync every night from cron:
+
+```cron
+15 0 * * *  cd /path/to/hisaab && make ingest >> data/ingest.log 2>&1
+```
+
+Originals live in `data/vault/` (set `HISAAB_VAULT_DIR` to move it). **Back this folder up** along with
+your database; the JSON backup doesn't include it.
 
 ## Commands
 
@@ -109,6 +146,7 @@ accounts (and leaves rows marked `Cr` alone). PDFs and automatic statement fetch
 | `hisaab migrate` | Bring the schema up to date. |
 | `hisaab check` | Show the configuration without revealing secrets. |
 | `hisaab demo` | Load a fictional household into an empty ledger (`--remove` takes it out). |
+| `hisaab ingest` | Fetch new statements from every connection (`--connector NAME`, `--folder PATH` for a one-off, `--reprocess` to retry passwords and refile). |
 | `hisaab export [file]` | Write a JSON backup of every account, transaction and balance. |
 | `hisaab restore file` | Load a backup into this database (empty, or `--replace`). Works across SQLite, Postgres and MySQL. |
 | `make test` / `make lint` | Run the test suites / linters and type checks. |
@@ -125,8 +163,8 @@ accounts (and leaves rows marked `Cr` alone). PDFs and automatic statement fetch
 | | Milestone |
 |---|---|
 | M0 | Skeleton, login, three-database CI ✓ |
-| **M1** | Ledger, CSV import, first net-worth dashboard ← *you are here* |
-| M2 | Statement vault (originals kept untouched) |
+| M1 | Ledger, CSV import, first net-worth dashboard ✓ |
+| **M2** | Statement vault (originals kept untouched), mail and Drive ingestion ← *you are here* |
 | M3 | Holdings from your CDSL/NSDL CAS |
 | M4 | Connectors and the nightly sync |
 | M5 | Bank and card statement parsing, checked to the paisa |
