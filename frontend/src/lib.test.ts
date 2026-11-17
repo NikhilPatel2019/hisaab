@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError, request } from "./api";
-import { formatINR } from "./format";
+import { niceTicks } from "./components/Charts";
+import { compact, formatINR, money, parseRupees, todayISO } from "./format";
+import { match } from "./router";
 
 describe("formatINR", () => {
   it("groups in lakhs and crores", () => {
@@ -32,5 +34,41 @@ describe("request", () => {
     await expect(request("/api/auth/login", { method: "POST" }, fetcher)).rejects.toEqual(
       new ApiError(401, "That password didn't match."),
     );
+  });
+});
+
+describe("money helpers", () => {
+  it("formats paise, showing paise only when present", () => {
+    expect(money(1248300_00)).toBe("₹12,48,300");
+    expect(money(1110709_50)).toBe("₹11,10,709.50");
+    expect(money(20000_00, { sign: true })).toBe("+₹20,000");
+    expect(money(-45000)).toBe("−₹450");
+  });
+  it("abbreviates for chart axes", () => {
+    expect(compact(1250000_00)).toBe("₹12.5L");
+    expect(compact(45000_00)).toBe("₹45k");
+    expect(compact(12000000_00)).toBe("₹1.2Cr");
+  });
+  it("uses the local date, not UTC's", () => {
+    // 1:30 AM on 18 Nov in India is still 17 Nov in UTC.
+    expect(todayISO(new Date(2026, 10, 18, 1, 30))).toBe("2026-11-18");
+  });
+  it("reads what people type", () => {
+    expect(parseRupees("1,23,456.78")).toBe(12345678);
+    expect(parseRupees("₹ 500")).toBe(50000);
+    expect(parseRupees("-1200.5")).toBe(-120050);
+    expect(parseRupees("12.345")).toBeNull();
+    expect(parseRupees("abc")).toBeNull();
+  });
+});
+
+describe("charts and routing", () => {
+  it("picks round axis ticks", () => {
+    expect(niceTicks(7_80_000, 16_80_000)).toEqual([750000, 1000000, 1250000, 1500000, 1750000]);
+    expect(niceTicks(0, 95)).toEqual([0, 25, 50, 75, 100]);
+  });
+  it("matches account paths", () => {
+    expect(match("/accounts/:id", "/accounts/42")).toEqual({ id: "42" });
+    expect(match("/accounts/:id", "/accounts")).toBeNull();
   });
 });
