@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     login_window_seconds: int = 300
     forwarded_allow_ips: str = "127.0.0.1"
 
+    # Where original statements are kept, named by their SHA-256. Back this folder up.
+    vault_dir: str = "./data/vault"
+
     # Used for "today" (month boundaries, the dashboard).
     timezone: str = "Asia/Kolkata"
 

@@ -98,7 +98,7 @@ input.field, select.field, textarea.field {
   .s4, .s6, .s8 { grid-column: span 12; }
 }
 
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .s3 { grid-column: span 3; } .s5 { grid-column: span 5; } .s7 { grid-column: span 7; }
 .h2 { margin: 0; font-size: 20px; font-weight: 700; }
@@ -116,8 +116,8 @@ textarea.field { padding: 12px 14px; min-height: 80px; resize: vertical; }
 .drawer-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.45); display: flex; justify-content: flex-end; }
 .drawer { width: min(460px, 100%); height: 100%; overflow-y: auto; background: var(--card); border-left: 1px solid var(--line); padding: 28px; box-sizing: border-box; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
-.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--well); border: 1px solid var(--line); }
-.seg button { min-height: 34px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; color: var(--ink4); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--well); border: 1px solid var(--line); max-width: 100%; overflow-x: auto; box-sizing: border-box; }
+.seg button { flex: none; white-space: nowrap; min-height: 34px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; color: var(--ink4); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--hover); color: var(--ink); }
 .dropzone { border: 2px dashed var(--line2); border-radius: 18px; padding: 32px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; cursor: pointer; }
 .dropzone:hover, .dropzone.over { border-color: var(--acc); background: var(--acc-tint); }
@@ -138,3 +138,31 @@ textarea.field { padding: 12px 14px; min-height: 80px; resize: vertical; }
   .page { padding-bottom: 96px; }
 }
 a.icon-btn { text-decoration: none; }
+
+/* Postbox */
+.doc-code {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--raised); color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+}
+.doc-title { color: var(--ink); text-decoration: none; font-weight: 500; }
+.doc-title:hover { text-decoration: underline; }
+.doc-file { font-size: 11px; color: var(--ink4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.needs-card {
+  border-radius: 24px; border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  background: linear-gradient(180deg, var(--warn-tint) 0%, var(--card) 60%);
+}
+.needs-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.7px; color: var(--warn-ink); }
+.needs-head .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--warn); }
+.needs-item { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.needs-item:last-of-type { border-bottom: none; padding-bottom: 0; }
+.step-n {
+  width: 28px; height: 28px; border-radius: 999px; background: var(--acc-tint); color: var(--acc-ink);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+}
+.facts { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 14px; }
+.facts dt { color: var(--ink4); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.conn { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--sep); }
+@media (max-width: 900px) {
+  .grid > .stat { grid-column: span 6; }
+}

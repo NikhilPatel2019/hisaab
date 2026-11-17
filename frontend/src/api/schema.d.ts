@@ -128,6 +128,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Connectors */
+        get: operations["list_connectors_api_connectors_get"];
+        put?: never;
+        /** Create Connector */
+        post: operations["create_connector_api_connectors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/connectors/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run All */
+        post: operations["run_all_api_connectors_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/connectors/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Connectors Status */
+        get: operations["connectors_status_api_connectors_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/connectors/{conn_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Connector */
+        delete: operations["delete_connector_api_connectors__conn_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Connector */
+        patch: operations["patch_connector_api_connectors__conn_id__patch"];
+        trace?: never;
+    };
+    "/api/connectors/{conn_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run One */
+        post: operations["run_one_api_connectors__conn_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard": {
         parameters: {
             query?: never;
@@ -158,6 +245,168 @@ export interface paths {
         post: operations["demo_load_api_demo_post"];
         /** Demo Remove */
         delete: operations["demo_remove_api_demo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doc-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Doc Rules */
+        get: operations["list_doc_rules_api_doc_rules_get"];
+        put?: never;
+        /** Create Doc Rule */
+        post: operations["create_doc_rule_api_doc_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doc-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Doc Rule */
+        delete: operations["delete_doc_rule_api_doc_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_api_documents_get"];
+        put?: never;
+        /** Upload Documents */
+        post: operations["upload_documents_api_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/reprocess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reprocess Documents */
+        post: operations["reprocess_documents_api_documents_reprocess_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document Stats */
+        get: operations["document_stats_api_documents_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_api_documents__doc_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Document */
+        patch: operations["patch_document_api_documents__doc_id__patch"];
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/original": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Document Original
+         * @description The file exactly as it arrived, still locked if it was.
+         */
+        get: operations["document_original_api_documents__doc_id__original_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unlock Document */
+        post: operations["unlock_document_api_documents__doc_id__unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{doc_id}/unlocked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Document Unlocked
+         * @description A copy without the password, made in memory for viewing. Nothing is written to disk.
+         */
+        get: operations["document_unlocked_api_documents__doc_id__unlocked_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -321,6 +570,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/statement-passwords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Statement Passwords
+         * @description Which facts are saved (never their values) and the labels of saved passwords.
+         */
+        get: operations["get_statement_passwords_api_statement_passwords_get"];
+        put?: never;
+        /** Add Statement Password */
+        post: operations["add_statement_password_api_statement_passwords_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/statement-passwords/facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Facts
+         * @description Save (or clear, with an empty value) the facts banks build passwords from.
+         */
+        put: operations["put_facts_api_statement_passwords_facts_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/statement-passwords/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Statement Password */
+        delete: operations["delete_statement_password_api_statement_passwords__name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transactions": {
         parameters: {
             query?: never;
@@ -454,6 +761,14 @@ export interface components {
              */
             on: string;
         };
+        /** Body_upload_documents_api_documents_post */
+        Body_upload_documents_api_documents_post: {
+            /**
+             * Files
+             * @description PDF statements
+             */
+            files: string[];
+        };
         /** CategoryIn */
         CategoryIn: {
             /**
@@ -486,6 +801,71 @@ export interface components {
             name: string;
             /** Spent Paise */
             spent_paise: number;
+        };
+        /** ConnectorIn */
+        ConnectorIn: {
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "folder" | "drive" | "imap";
+            /** Name */
+            name: string;
+            /**
+             * Secret
+             * @description App password or service-account JSON
+             */
+            secret?: string | null;
+        };
+        /** ConnectorOut */
+        ConnectorOut: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Enabled */
+            enabled: boolean;
+            /** Has Secret */
+            has_secret: boolean;
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "folder" | "drive" | "imap";
+            /** Last Error */
+            last_error: string | null;
+            /** Last Ok At */
+            last_ok_at: string | null;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Last Summary */
+            last_summary: string | null;
+            /** Name */
+            name: string;
+        };
+        /** ConnectorPatch */
+        ConnectorPatch: {
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Secret */
+            secret?: string | null;
         };
         /** Dashboard */
         Dashboard: {
@@ -543,6 +923,259 @@ export interface components {
             snapshots: number;
             /** Transactions */
             transactions: number;
+        };
+        /** DocRuleCreated */
+        DocRuleCreated: {
+            /** Account Id */
+            account_id?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Institution */
+            institution?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown";
+            /** Match Filename */
+            match_filename?: string | null;
+            /** Match Sender */
+            match_sender?: string | null;
+            /** Match Text */
+            match_text?: string | null;
+            /** Name */
+            name: string;
+            /** Reclassified */
+            reclassified: number;
+        };
+        /** DocRuleIn */
+        DocRuleIn: {
+            /** Account Id */
+            account_id?: number | null;
+            /** Institution */
+            institution?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown";
+            /** Match Filename */
+            match_filename?: string | null;
+            /** Match Sender */
+            match_sender?: string | null;
+            /** Match Text */
+            match_text?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** DocRuleOut */
+        DocRuleOut: {
+            /** Account Id */
+            account_id?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Institution */
+            institution?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown";
+            /** Match Filename */
+            match_filename?: string | null;
+            /** Match Sender */
+            match_sender?: string | null;
+            /** Match Text */
+            match_text?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** DocStats */
+        DocStats: {
+            /** Auto Filed Pct */
+            auto_filed_pct: number | null;
+            /** By Kind */
+            by_kind: {
+                [key: string]: number;
+            };
+            /** Duplicates Skipped */
+            duplicates_skipped: number;
+            /** Filed */
+            filed: number;
+            /** Filed Automatically */
+            filed_automatically: number;
+            /** Ignored */
+            ignored: number;
+            /** Kept */
+            kept: number;
+            /** Last Document At */
+            last_document_at: string | null;
+            /** Needs Password */
+            needs_password: number;
+            /** Needs Review */
+            needs_review: number;
+        };
+        /** DocumentDetail */
+        DocumentDetail: {
+            /** Account Id */
+            account_id: number | null;
+            /** Account Name */
+            account_name: string | null;
+            /** Copies Seen */
+            copies_seen: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Encrypted */
+            encrypted: boolean;
+            /** Filed By */
+            filed_by: ("you" | "rule" | "builtin") | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: number;
+            /** Institution */
+            institution: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown";
+            /** Note */
+            note: string | null;
+            /** Opened With */
+            opened_with: string | null;
+            /** Page Count */
+            page_count: number | null;
+            /** Period End */
+            period_end: string | null;
+            /** Period Start */
+            period_start: string | null;
+            /** Received At */
+            received_at: string | null;
+            /** Sender */
+            sender: string | null;
+            /** Sightings */
+            sightings: components["schemas"]["Sighting"][];
+            /** Size Bytes */
+            size_bytes: number;
+            /** Source */
+            source: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "needs_password" | "needs_review" | "filed" | "ignored";
+            /** Subject */
+            subject: string | null;
+            /** Unlocked */
+            unlocked: boolean;
+        };
+        /** DocumentOut */
+        DocumentOut: {
+            /** Account Id */
+            account_id: number | null;
+            /** Account Name */
+            account_name: string | null;
+            /** Copies Seen */
+            copies_seen: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Encrypted */
+            encrypted: boolean;
+            /** Filed By */
+            filed_by: ("you" | "rule" | "builtin") | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: number;
+            /** Institution */
+            institution: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown";
+            /** Note */
+            note: string | null;
+            /** Opened With */
+            opened_with: string | null;
+            /** Page Count */
+            page_count: number | null;
+            /** Period End */
+            period_end: string | null;
+            /** Period Start */
+            period_start: string | null;
+            /** Received At */
+            received_at: string | null;
+            /** Sender */
+            sender: string | null;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Source */
+            source: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "needs_password" | "needs_review" | "filed" | "ignored";
+            /** Subject */
+            subject: string | null;
+            /** Unlocked */
+            unlocked: boolean;
+        };
+        /** DocumentPage */
+        DocumentPage: {
+            /** Items */
+            items: components["schemas"]["DocumentOut"][];
+            /** Total */
+            total: number;
+        };
+        /** DocumentPatch */
+        DocumentPatch: {
+            /** Account Id */
+            account_id?: number | null;
+            /** Institution */
+            institution?: string | null;
+            /** Kind */
+            kind?: ("bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown") | null;
+            /** Note */
+            note?: string | null;
+            /** Period End */
+            period_end?: string | null;
+            /** Period Start */
+            period_start?: string | null;
+            /** Status */
+            status?: ("filed" | "ignored" | "needs_review") | null;
+        };
+        /** FactsBody */
+        FactsBody: {
+            /**
+             * Dob
+             * @description YYYY-MM-DD
+             */
+            dob?: string | null;
+            /** Mobile */
+            mobile?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Pan */
+            pan?: string | null;
         };
         /** GroupTotal */
         GroupTotal: {
@@ -677,6 +1310,29 @@ export interface components {
             /** Spent Paise */
             spent_paise: number;
         };
+        /** PasswordBody */
+        PasswordBody: {
+            /** Label */
+            label: string;
+            /** Password */
+            password: string;
+        };
+        /** PasswordState */
+        PasswordState: {
+            /** Facts */
+            facts: {
+                [key: string]: boolean;
+            };
+            /** Locked Documents */
+            locked_documents: number;
+            /** Saved */
+            saved: components["schemas"]["SavedPassword"][];
+            /**
+             * Unlocked Now
+             * @default 0
+             */
+            unlocked_now: number;
+        };
         /** Point */
         Point: {
             /** Net Worth Paise */
@@ -747,6 +1403,36 @@ export interface components {
              */
             posted_on: string;
         };
+        /** ReprocessResult */
+        ReprocessResult: {
+            /** Changed */
+            changed: number;
+            /** Checked */
+            checked: number;
+            /** Unlocked */
+            unlocked: number;
+        };
+        /** RunnerState */
+        RunnerState: {
+            /** Current */
+            current: string | null;
+            /** Running */
+            running: boolean;
+            /** Started At */
+            started_at: string | null;
+        };
+        /** SavedPassword */
+        SavedPassword: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+        };
         /** SecretBody */
         SecretBody: {
             /** Value */
@@ -768,6 +1454,18 @@ export interface components {
             authenticated: boolean;
             /** Setup Required */
             setup_required: boolean;
+        };
+        /** Sighting */
+        Sighting: {
+            /** Outcome */
+            outcome: string;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+            /** Source */
+            source: string;
         };
         /** SnapshotIn */
         SnapshotIn: {
@@ -896,6 +1594,40 @@ export interface components {
         UndoResult: {
             /** Transactions Removed */
             transactions_removed: number;
+        };
+        /** UnlockBody */
+        UnlockBody: {
+            /** Password */
+            password: string;
+            /**
+             * Save As
+             * @description Label for the saved password (it's kept, encrypted, to reopen files)
+             */
+            save_as?: string | null;
+        };
+        /** UnlockResult */
+        UnlockResult: {
+            /** Also Unlocked */
+            also_unlocked: number;
+            document: components["schemas"]["DocumentOut"];
+            /** Opened */
+            opened: boolean;
+        };
+        /** UploadResult */
+        UploadResult: {
+            /** Document Id */
+            document_id: number | null;
+            /** Filename */
+            filename: string;
+            /** Message */
+            message: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "new" | "duplicate" | "seen" | "rejected";
+            /** Status */
+            status: ("needs_password" | "needs_review" | "filed" | "ignored") | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1257,6 +1989,207 @@ export interface operations {
             };
         };
     };
+    list_connectors_api_connectors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"][];
+                };
+            };
+        };
+    };
+    create_connector_api_connectors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_all_api_connectors_run_post: {
+        parameters: {
+            query?: {
+                wait?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    connectors_status_api_connectors_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
+                };
+            };
+        };
+    };
+    delete_connector_api_connectors__conn_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conn_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_connector_api_connectors__conn_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conn_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_one_api_connectors__conn_id__run_post: {
+        parameters: {
+            query?: {
+                wait?: boolean;
+            };
+            header?: never;
+            path: {
+                conn_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_dashboard_api_dashboard_get: {
         parameters: {
             query?: {
@@ -1324,6 +2257,361 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemoRemoved"];
+                };
+            };
+        };
+    };
+    list_doc_rules_api_doc_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocRuleOut"][];
+                };
+            };
+        };
+    };
+    create_doc_rule_api_doc_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocRuleCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_doc_rule_api_doc_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_documents_get: {
+        parameters: {
+            query?: {
+                status?: ("needs_you" | "needs_password" | "needs_review" | "filed" | "ignored") | null;
+                group?: ("banks" | "cards" | "investments" | "tax") | null;
+                kind?: ("bank_statement" | "card_statement" | "cas" | "broker" | "tax" | "payslip" | "insurance" | "other" | "unknown") | null;
+                account_id?: number | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_documents_api_documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_documents_api_documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResult"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reprocess_documents_api_documents_reprocess_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReprocessResult"];
+                };
+            };
+        };
+    };
+    document_stats_api_documents_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocStats"];
+                };
+            };
+        };
+    };
+    get_document_api_documents__doc_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_document_api_documents__doc_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_original_api_documents__doc_id__original_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlock_document_api_documents__doc_id__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnlockResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_unlocked_api_documents__doc_id__unlocked_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1617,6 +2905,123 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_statement_passwords_api_statement_passwords_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordState"];
+                };
+            };
+        };
+    };
+    add_statement_password_api_statement_passwords_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_facts_api_statement_passwords_facts_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FactsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_statement_password_api_statement_passwords__name__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordState"];
+                };
             };
             /** @description Validation Error */
             422: {

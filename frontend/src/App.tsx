@@ -5,6 +5,7 @@ import { AccountDetail } from "./pages/AccountDetail";
 import { Accounts } from "./pages/Accounts";
 import { Home } from "./pages/Home";
 import { Import } from "./pages/Import";
+import { Postbox } from "./pages/Postbox";
 import { Settings } from "./pages/Settings";
 import { Transactions } from "./pages/Transactions";
 import { Link, match, useLocation } from "./router";
@@ -161,6 +162,7 @@ const NAV: [string, string][] = [
   ["Home", "/"],
   ["Accounts", "/accounts"],
   ["Transactions", "/transactions"],
+  ["Postbox", "/postbox"],
   ["Import", "/import"],
 ];
 
@@ -173,6 +175,7 @@ function Shell({ toggle, onLogout }: { toggle: React.ReactNode; onLogout: () => 
   else if (accountMatch && /^\d+$/.test(accountMatch.id)) page = <AccountDetail id={Number(accountMatch.id)} />;
   else if (path === "/transactions") page = <Transactions />;
   else if (path === "/import") page = <Import />;
+  else if (path === "/postbox") page = <Postbox />;
   else if (path === "/settings") page = <Settings onLogout={onLogout} />;
   else
     page = (

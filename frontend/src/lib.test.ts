@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ApiError, request } from "./api";
 import { niceTicks } from "./components/Charts";
+import { arrivedFrom, docFrom, docTitle, sizeLabel } from "./docs";
 import { compact, formatINR, money, parseRupees, todayISO } from "./format";
 import { match } from "./router";
 
@@ -25,6 +26,16 @@ describe("request", () => {
     const get = fetcher.mock.calls[1] as unknown as [string, RequestInit];
     expect(new Headers(post[1].headers).get("X-Hisaab")).toBe("1");
     expect(new Headers(get[1].headers).get("X-Hisaab")).toBeNull();
+  });
+
+  it("lets FormData set its own content type", async () => {
+    const fetcher = vi.fn(async () => new Response("[]", { status: 201 }));
+    await request("/api/documents", { method: "POST", body: new FormData() }, fetcher);
+    await request("/api/accounts", { method: "POST", body: "{}" }, fetcher);
+    const upload = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    const json = fetcher.mock.calls[1] as unknown as [string, RequestInit];
+    expect(new Headers(upload[1].headers).get("Content-Type")).toBeNull();
+    expect(new Headers(json[1].headers).get("Content-Type")).toBe("application/json");
   });
 
   it("surfaces the server's message", async () => {
@@ -70,5 +81,30 @@ describe("charts and routing", () => {
   it("matches account paths", () => {
     expect(match("/accounts/:id", "/accounts/42")).toEqual({ id: "42" });
     expect(match("/accounts/:id", "/accounts")).toBeNull();
+  });
+});
+
+describe("postbox labels", () => {
+  const today = new Date(2026, 10, 17);
+  it("names a statement by account, else institution, with its month", () => {
+    const base = { kind: "bank_statement" as const, account_name: null, institution: null, period_end: null };
+    expect(docTitle({ ...base, account_name: "Salary", period_end: "2026-10-31" }, today)).toBe("Salary · Oct");
+    expect(docTitle({ ...base, kind: "card_statement", institution: "Bank A", period_end: "2025-03-04" }, today)).toBe(
+      "Bank A card bill · Mar 2025",
+    );
+    expect(docTitle({ ...base, kind: "unknown", account_name: "Salary" }, today)).toBe("Not sorted yet");
+    expect(docTitle({ ...base, kind: "cas" }, today)).toBe("Investments summary (CAS)");
+  });
+  it("says who it's from", () => {
+    expect(docFrom({ institution: null, sender: "Alerts <a@Mail.Bank.example>", source: "imap" })).toBe("mail.bank.example");
+    expect(docFrom({ institution: null, sender: null, source: "upload" })).toBe("Uploaded");
+    expect(docFrom({ institution: "CDSL", sender: "x@y.example", source: "imap" })).toBe("CDSL");
+    expect(arrivedFrom({ institution: null, sender: null, source: "upload" })).toBe("A file you uploaded");
+    expect(arrivedFrom({ institution: null, sender: "a@bank.example", source: "imap" })).toBe("A document from bank.example");
+  });
+  it("sizes files", () => {
+    expect(sizeLabel(900)).toBe("900 B");
+    expect(sizeLabel(48_000)).toBe("47 KB");
+    expect(sizeLabel(3_400_000)).toBe("3.2 MB");
   });
 });

@@ -33,7 +33,8 @@ export async function request<T>(
   if (method !== "GET" && method !== "HEAD") {
     for (const [k, v] of Object.entries(CSRF_HEADERS)) headers.set(k, v);
   }
-  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  // FormData sets its own multipart boundary; only JSON strings need the header.
+  if (typeof init.body === "string" && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
 
   const res = await fetcher(path, { ...init, method, headers, credentials: "same-origin" });
   if (!res.ok) {

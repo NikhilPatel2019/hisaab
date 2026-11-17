@@ -1,6 +1,6 @@
 BACKEND := uv run --project backend
 
-.PHONY: help setup dev dev-api dev-web run demo backup gen-api test test-api test-web lint fix build docker-setup docker-up
+.PHONY: help setup dev dev-api dev-web run demo ingest backup gen-api test test-api test-web lint fix build docker-setup docker-up
 
 help: ## show this list
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-13s %s\n", $$1, $$2}'
@@ -25,6 +25,9 @@ run: build ## build the web app and serve everything on :8000
 
 demo: ## load a fictional household to explore (remove with: hisaab demo --remove)
 	$(BACKEND) hisaab demo
+
+ingest: ## fetch new statements from your connections (run it nightly from cron)
+	$(BACKEND) hisaab ingest
 
 backup: ## write a JSON backup to backups/
 	mkdir -p backups
