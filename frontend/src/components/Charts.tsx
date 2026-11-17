@@ -254,19 +254,21 @@ export function LineChart({
           </Tooltip>
         )}
       </div>
-      <table className="sr-only">
-        <caption>{ariaLabel}</caption>
-        <tbody>
-          {labels.map((_, i) => (
-            <tr key={i}>
-              <th scope="row">{tipTitle(i)}</th>
-              {series.map((s) => (
-                <td key={s.label}>{s.values[i] === null ? "" : format(s.values[i] as number)}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>{ariaLabel}</caption>
+          <tbody>
+            {labels.map((_, i) => (
+              <tr key={i}>
+                <th scope="row">{tipTitle(i)}</th>
+                {series.map((s) => (
+                  <td key={s.label}>{s.values[i] === null ? "" : format(s.values[i] as number)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -383,27 +385,29 @@ export function BarChart({
           </Tooltip>
         )}
       </div>
-      <table className="sr-only">
-        <caption>{ariaLabel}</caption>
-        <thead>
-          <tr>
-            <th />
-            {series.map((s) => (
-              <th key={s.label}>{s.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {labels.map((_, i) => (
-            <tr key={i}>
-              <th scope="row">{tipTitle(i)}</th>
+      <div className="sr-only">
+        <table>
+          <caption>{ariaLabel}</caption>
+          <thead>
+            <tr>
+              <th />
               {series.map((s) => (
-                <td key={s.label}>{format(s.values[i])}</td>
+                <th key={s.label}>{s.label}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {labels.map((_, i) => (
+              <tr key={i}>
+                <th scope="row">{tipTitle(i)}</th>
+                {series.map((s) => (
+                  <td key={s.label}>{format(s.values[i])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

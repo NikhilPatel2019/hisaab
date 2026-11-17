@@ -45,7 +45,7 @@ export function Home() {
 
       <div className="grid">
         <section className="hero s8" aria-labelledby="nw" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <span id="nw" className="cap">
                 Net worth
