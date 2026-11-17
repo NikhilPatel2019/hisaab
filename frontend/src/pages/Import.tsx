@@ -28,8 +28,9 @@ export function Import() {
 
   const txnAccounts = (accounts.data ?? []).filter((a) => a.tracking === "transactions" && !a.archived);
   useEffect(() => {
-    if (accountId === null && txnAccounts.length === 1) setAccountId(txnAccounts[0].id);
-  }, [txnAccounts, accountId]);
+    const only = (accounts.data ?? []).filter((a) => a.tracking === "transactions" && !a.archived);
+    if (only.length === 1) setAccountId((cur) => cur ?? only[0].id);
+  }, [accounts.data]);
 
   async function runPreview(m: Mapping | null, f = file, acct = accountId) {
     if (!f || acct === null) return;

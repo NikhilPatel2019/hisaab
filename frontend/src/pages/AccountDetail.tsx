@@ -3,7 +3,7 @@ import { type FormEvent, useState } from "react";
 import { client, ok } from "../api/client";
 import { LineChart } from "../components/Charts";
 import { Chip, ErrorBox, Field, Loading, PageHead } from "../components/ui";
-import { ACCOUNT_KINDS, compact, money, parseRupees, shortDate } from "../format";
+import { ACCOUNT_KINDS, compact, money, parseRupees, shortDate, todayISO } from "../format";
 import { useAsync } from "../hooks";
 import { Link, navigate } from "../router";
 import { AccountForm } from "./Accounts";
@@ -129,7 +129,7 @@ function SnapshotPanel({
   snaps: { id: number; as_of: string; balance_paise: number; ledger_paise?: number | null; note?: string | null }[];
   onSaved: () => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const [asOf, setAsOf] = useState(today);
   const [value, setValue] = useState("");
   const [err, setErr] = useState<string | null>(null);

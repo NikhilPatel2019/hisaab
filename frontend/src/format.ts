@@ -44,6 +44,12 @@ export function longDate(iso: string): string {
   return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 }
 
+/** Today as YYYY-MM-DD in the person's own time zone (toISOString would give UTC's date). */
+export function todayISO(now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 /** "1,23,456.78" / "-500" typed by a person → paise, or null if it isn't a number. */
 export function parseRupees(text: string): number | null {
   const s = text.replace(/[₹,\s]/g, "");

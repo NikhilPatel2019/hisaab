@@ -198,3 +198,49 @@ def test_export_endpoint(logged_in: TestClient) -> None:
     assert "attachment" in r.headers["content-disposition"]
     body = r.json()
     assert body["format"] == "hisaab-backup" and len(body["accounts"]) == 8
+
+
+def test_patch_rejects_empty_required_fields(logged_in: TestClient) -> None:
+    c = logged_in
+    a = c.post("/api/accounts", json={"name": "Bank", "kind": "bank"}, headers=CSRF).json()
+    t = c.post(
+        "/api/transactions",
+        json={
+            "account_id": a["id"],
+            "posted_on": "2026-11-01",
+            "amount_paise": -100,
+            "description": "tea",
+        },
+        headers=CSRF,
+    ).json()
+    assert c.patch(f"/api/accounts/{a['id']}", json={"name": None}, headers=CSRF).status_code == 422
+    assert (
+        c.patch(
+            f"/api/transactions/{t['id']}", json={"amount_paise": None}, headers=CSRF
+        ).status_code
+        == 422
+    )
+    # null still clears the fields where that's meaningful
+    r = c.patch(
+        f"/api/transactions/{t['id']}", json={"category_id": None, "notes": None}, headers=CSRF
+    )
+    assert r.status_code == 200
+
+
+def test_search_is_literal(logged_in: TestClient) -> None:
+    c = logged_in
+    a = c.post("/api/accounts", json={"name": "Bank", "kind": "bank"}, headers=CSRF).json()
+    for desc in ("10% CASHBACK", "SHOP_KART ONLINE", "plain"):
+        c.post(
+            "/api/transactions",
+            json={
+                "account_id": a["id"],
+                "posted_on": "2026-11-01",
+                "amount_paise": -100,
+                "description": desc,
+            },
+            headers=CSRF,
+        )
+    assert c.get("/api/transactions", params={"q": "%"}).json()["total"] == 1
+    assert c.get("/api/transactions", params={"q": "_"}).json()["total"] == 1
+    assert c.get("/api/transactions", params={"q": "PLAIN"}).json()["total"] == 1
