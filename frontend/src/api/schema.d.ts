@@ -498,6 +498,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/investments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Portfolio */
+        get: operations["get_portfolio_api_investments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/investments/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Backfill
+         * @description Work out month-end values from fund transactions and past NAVs.
+         */
+        post: operations["backfill_api_investments_backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/investments/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Cas
+         * @description Read every CAS in the postbox that hasn't been read yet.
+         */
+        post: operations["import_cas_api_investments_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/investments/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Prices
+         * @description Fetch today's NAVs and closing prices, then revalue your holdings.
+         */
+        post: operations["refresh_prices_api_investments_prices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -693,7 +770,7 @@ export interface components {
              * @default transactions
              * @enum {string}
              */
-            tracking: "transactions" | "balance";
+            tracking: "transactions" | "balance" | "holdings";
         };
         /** AccountOut */
         AccountOut: {
@@ -728,7 +805,7 @@ export interface components {
              * Tracking
              * @enum {string}
              */
-            tracking: "transactions" | "balance";
+            tracking: "transactions" | "balance" | "holdings";
             /** Transactions */
             transactions: number;
         };
@@ -1193,6 +1270,86 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HoldingOut */
+        HoldingOut: {
+            /** Account Id */
+            account_id: number;
+            /** Account Name */
+            account_name: string;
+            /**
+             * Asset Class
+             * @enum {string}
+             */
+            asset_class: "equity" | "debt" | "hybrid" | "gold" | "other";
+            /** Cost Paise */
+            cost_paise: number | null;
+            /** Folio */
+            folio: string | null;
+            /** Gain Paise */
+            gain_paise: number | null;
+            /** Instrument Id */
+            instrument_id: number;
+            /** Isin */
+            isin: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Price */
+            price: string;
+            /**
+             * Price Date
+             * Format: date
+             */
+            price_date: string;
+            /** Price Source */
+            price_source: string;
+            /** Stale */
+            stale: boolean;
+            /**
+             * Statement Date
+             * Format: date
+             */
+            statement_date: string;
+            /** Units */
+            units: string;
+            /** Value Paise */
+            value_paise: number;
+            /** Xirr Pct */
+            xirr_pct: number | null;
+        };
+        /** HoldingsAccountOut */
+        HoldingsAccountOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Statement Date
+             * Format: date
+             */
+            statement_date: string;
+            /** Value Paise */
+            value_paise: number;
+        };
+        /** ImportNote */
+        ImportNote: {
+            /** Document Id */
+            document_id: number;
+            /** Filename */
+            filename: string;
+            /** Message */
+            message: string | null;
+            /** Period End */
+            period_end: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "warnings" | "failed";
+            /** Warnings */
+            warnings: string[];
+        };
         /** ImportOut */
         ImportOut: {
             /** Account */
@@ -1247,6 +1404,21 @@ export interface components {
             /** Uncategorised */
             uncategorised: number;
         };
+        /** LastRun */
+        LastRun: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Errors
+             * @default []
+             */
+            errors: string[];
+            /** Text */
+            text: string;
+        };
         /** LoginBody */
         LoginBody: {
             /** Password */
@@ -1299,6 +1471,18 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** MixOut */
+        MixOut: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "equity" | "debt" | "hybrid" | "gold" | "other";
+            /** Label */
+            label: string;
+            /** Value Paise */
+            value_paise: number;
+        };
         /** MonthFlow */
         MonthFlow: {
             /** Income Paise */
@@ -1342,6 +1526,45 @@ export interface components {
              * Format: date
              */
             on: string;
+        };
+        /** Portfolio */
+        Portfolio: {
+            /** Accounts */
+            accounts: components["schemas"]["HoldingsAccountOut"][];
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Cost Paise */
+            cost_paise: number | null;
+            /** Gain Paise */
+            gain_paise: number | null;
+            /** Gain Pct */
+            gain_pct: number | null;
+            /** Holdings */
+            holdings: components["schemas"]["HoldingOut"][];
+            last_prices: components["schemas"]["LastRun"] | null;
+            /** Mix */
+            mix: components["schemas"]["MixOut"][];
+            /** Pending Imports */
+            pending_imports: number;
+            /** Prices As Of */
+            prices_as_of: string | null;
+            /** Problems */
+            problems: components["schemas"]["ImportNote"][];
+            /** Running */
+            running: boolean;
+            /** Stale */
+            stale: number;
+            /** Statement Date */
+            statement_date: string | null;
+            /** Total Paise */
+            total_paise: number;
+            /** Xirr Covers Paise */
+            xirr_covers_paise: number;
+            /** Xirr Pct */
+            xirr_pct: number | null;
         };
         /** Preview */
         Preview: {
@@ -2773,6 +2996,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UndoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_portfolio_api_investments_get: {
+        parameters: {
+            query?: {
+                account_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Portfolio"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backfill_api_investments_backfill_post: {
+        parameters: {
+            query?: {
+                months?: number;
+                wait?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_cas_api_investments_import_post: {
+        parameters: {
+            query?: {
+                retry_failed?: boolean;
+                wait?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_prices_api_investments_prices_post: {
+        parameters: {
+            query?: {
+                wait?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunnerState"];
                 };
             };
             /** @description Validation Error */

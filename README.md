@@ -6,9 +6,9 @@ Bank and card statements, mutual funds, shares, tax and goals in one place, and 
 hisaab is a template, not a service. There is no hisaab cloud, no sign-up and no telemetry.
 You clone it, run it on your laptop or your own server, and point it at a database you control.
 
-> **Status: M2 — the postbox.** Accounts, transactions, CSV import and net worth work, and statement
-> PDFs now arrive from Gmail, Google Drive or a folder into a vault that keeps every original.
-> Reading the numbers out of them, your CAS and broker sync arrive from M3 onwards (see [Roadmap](#roadmap)).
+> **Status: M3 — investments.** Accounts, transactions, CSV import, net worth and the statement postbox
+> work, and your CAS now becomes holdings: every fund and share, valued daily, with your returns.
+> Broker sync and the nightly scheduler arrive in M4 (see [Roadmap](#roadmap)).
 
 ## What you get today
 
@@ -41,6 +41,20 @@ You clone it, run it on your laptop or your own server, and point it at a databa
 - Bank and card statements, CDSL/NSDL/CAMS/KFintech CAS, contract notes, AIS/26AS/Form 16 and payslips are
   recognised and matched to your accounts by their last four digits. Anything else waits in
   **Needs you**; your own filing rules come first.
+
+**Investments from your CAS**
+
+- Every CDSL/NSDL CAS (shares, ETFs, bonds, funds held in demat or in folios, NPS) and every CAMS/KFintech CAS
+  in the postbox is read with [casparser](https://github.com/codereverser/casparser) (pinned) into
+  holdings, one account per demat account plus one for your fund folios.
+- On a statement's date, units and values are **exactly as printed**. After that, funds are valued at
+  AMFI's NAV and shares and ETFs at the NSE (or BSE) closing price, and every price shows its date: old
+  ones are flagged, never passed off as today's.
+- A detailed CAMS/KFintech CAS brings your fund transactions too, for **XIRR** per fund and overall,
+  and month-end history for the net-worth chart.
+- If casparser's numbers don't add up for a holding, the warning is shown, not swallowed.
+- Account and folio numbers are never stored: accounts are linked by a one-way hash, and only the last
+  digits are shown.
 
 **Private by design**
 
@@ -131,8 +145,14 @@ Then **Settings → Statement passwords**: save the facts banks build passwords 
 on the Postbox, or sync every night from cron:
 
 ```cron
-15 0 * * *  cd /path/to/hisaab && make ingest >> data/ingest.log 2>&1
+15 0 * * *  cd /path/to/hisaab && make ingest prices >> data/ingest.log 2>&1
 ```
+
+A CAS that lands in the postbox is read into holdings straight away (set `HISAAB_AUTO_IMPORT_CAS=false`
+to do it by hand from the Investments page or with `hisaab cas`). Prices come from public end-of-day
+files: AMFI's NAV list for funds, the NSE/BSE bhavcopy for shares and ETFs, and, for filling in past
+months, fund NAV history from [api.mfapi.in](https://www.mfapi.in/). Add `make prices` to the same cron
+job to keep values fresh.
 
 Originals live in `data/vault/` (set `HISAAB_VAULT_DIR` to move it). **Back this folder up** along with
 your database; the JSON backup doesn't include it.
@@ -146,6 +166,9 @@ your database; the JSON backup doesn't include it.
 | `hisaab migrate` | Bring the schema up to date. |
 | `hisaab check` | Show the configuration without revealing secrets. |
 | `hisaab demo` | Load a fictional household into an empty ledger (`--remove` takes it out). |
+| `hisaab cas` | Read every CAS in the postbox into holdings (`--retry` for ones that failed). |
+| `hisaab prices` | Fetch NAVs and closing prices and revalue holdings (`--backfill` fills in month-end history). |
+| `hisaab cas-compat ORIGINAL UNLOCKED` | Check casparser reads an unlocked copy exactly like the original. Prints a verdict, never your numbers. |
 | `hisaab ingest` | Fetch new statements from every connection (`--connector NAME`, `--folder PATH` for a one-off, `--reprocess` to retry passwords and refile). |
 | `hisaab export [file]` | Write a JSON backup of every account, transaction and balance. |
 | `hisaab restore file` | Load a backup into this database (empty, or `--replace`). Works across SQLite, Postgres and MySQL. |
@@ -164,8 +187,8 @@ your database; the JSON backup doesn't include it.
 |---|---|
 | M0 | Skeleton, login, three-database CI ✓ |
 | M1 | Ledger, CSV import, first net-worth dashboard ✓ |
-| **M2** | Statement vault (originals kept untouched), mail and Drive ingestion ← *you are here* |
-| M3 | Holdings from your CDSL/NSDL CAS |
+| M2 | Statement vault (originals kept untouched), mail and Drive ingestion ✓ |
+| **M3** | Holdings from your CAS, daily valuation, XIRR ← *you are here* |
 | M4 | Connectors and the nightly sync |
 | M5 | Bank and card statement parsing, checked to the paisa |
 | M6 | Categories and merchant rules |

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 import secrets
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -21,6 +23,8 @@ from hisaab.db import make_engine, make_sessionmaker
 from hisaab.docs.api import router as docs_router
 from hisaab.docs.connectors import Runner
 from hisaab.docs.vault import Vault
+from hisaab.invest import jobs as invest_jobs
+from hisaab.invest.api import router as invest_router
 from hisaab.ledger.api import router as ledger_router
 from hisaab.secretstore import SecretBox
 from hisaab.security import LoginLimiter
@@ -96,7 +100,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.secret_box = SecretBox(settings.secret_key) if settings.secret_key else None
     app.state.vault = Vault(settings.vault_dir)
-    app.state.runner = Runner(app.state.sessionmaker, app.state.vault, app.state.secret_box)
+    app.state.price_http = None  # tests swap in a fake; None means the real internet
+
+    def after_sync() -> None:
+        # A sync may have brought in a CAS: read it, so holdings are up to date.
+        on = datetime.now(ZoneInfo(settings.timezone)).date()
+        invest_jobs.import_cas(app.state.sessionmaker, app.state.vault, app.state.secret_box, on)
+
+    app.state.runner = Runner(
+        app.state.sessionmaker,
+        app.state.vault,
+        app.state.secret_box,
+        after_sync=after_sync if settings.auto_import_cas else None,
+    )
 
     session_secret = settings.session_secret
     if not session_secret:
@@ -117,6 +133,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(private)
     app.include_router(ledger_router)
     app.include_router(docs_router)
+    app.include_router(invest_router)
 
     if settings.static_dir and Path(settings.static_dir, "index.html").is_file():
         app.mount("/", SPAStaticFiles(directory=settings.static_dir, html=True), name="web")

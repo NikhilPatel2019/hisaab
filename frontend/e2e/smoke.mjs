@@ -61,11 +61,14 @@ for (const theme of ["dark", "light"]) {
   }
   const bank = accounts.find((a) => a.tracking === "transactions");
   const epf = accounts.find((a) => a.tracking === "balance");
+  const funds = accounts.find((a) => a.tracking === "holdings");
   const pages = [
     ["home", "/", "Net worth"],
     ["accounts", "/accounts", "Bank & cash"],
     ["account", `/accounts/${bank.id}`, "Check against the bank"],
     ["account-balance", `/accounts/${epf.id}`, "Update the value"],
+    ["invest", "/invest", "Your mix"],
+    ["account-holdings", `/accounts/${funds.id}`, "How it’s valued"],
     ["transactions", "/transactions", "transactions ·"],
     ["sort", "/transactions?uncategorised=1", "transactions ·"],
     ["import", "/import", "Drop a CSV here"],

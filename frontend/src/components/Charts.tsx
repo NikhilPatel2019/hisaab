@@ -107,7 +107,11 @@ export function LineChart({
   const plotH = height - PAD.top - PAD.bottom;
   const x = (i: number) => PAD.left + (n <= 1 ? plotW / 2 : (i * plotW) / (n - 1));
   const y = (v: number) => PAD.top + plotH - ((v - lo) / (hi - lo || 1)) * plotH;
-  const step = everyNthLabel ?? Math.max(1, Math.ceil(n / Math.max(2, Math.floor(plotW / 64))));
+  // Room for each label depends on how long the labels are ("31 Oct 2025" needs more than "Oct").
+  const labelW = Math.max(52, Math.max(0, ...labels.map((l) => l.length)) * 7 + 24);
+  const step = everyNthLabel ?? Math.max(1, Math.ceil(n / Math.max(2, Math.floor(plotW / labelW))));
+  // The last label is always shown, so skip a regular one that would crowd it.
+  const showLabel = (i: number) => i === n - 1 || (i % step === 0 && n - 1 - i >= step);
 
   function path(vals: (number | null)[]): string {
     let d = "";
@@ -170,7 +174,7 @@ export function LineChart({
               </g>
             ))}
             {labels.map((l, i) =>
-              i % step === 0 || i === n - 1 ? (
+              showLabel(i) ? (
                 <text
                   key={i}
                   x={x(i)}

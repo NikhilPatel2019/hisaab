@@ -45,7 +45,7 @@ AccountKind = Literal[
     "loan",
     "other_liability",
 ]
-Tracking = Literal["transactions", "balance"]
+Tracking = Literal["transactions", "balance", "holdings"]
 CategoryKind = Literal["expense", "income", "transfer", "investment"]
 assert set(AccountKind.__args__) == set(ACCOUNT_KINDS)  # type: ignore[attr-defined]
 assert set(CategoryKind.__args__) == set(CATEGORY_KINDS)  # type: ignore[attr-defined]
@@ -364,10 +364,12 @@ def _one_txn(db: Session, txn_id: int) -> TxnOut:
 @router.post("/transactions", status_code=status.HTTP_201_CREATED)
 def create_transaction(body: TxnIn, db: Db) -> TxnOut:
     account = _get(db, Account, body.account_id, "account")
-    if account.tracking == "balance":
+    if account.tracking != "transactions":
         raise HTTPException(
             422,
-            "This account is tracked by balance. Add a balance update instead.",
+            "This account is tracked by value, not transactions. Add a balance update instead."
+            if account.tracking == "balance"
+            else "This account's value comes from your CAS and market prices.",
         )
     _check_category(db, body.category_id)
     t = Transaction(
@@ -497,10 +499,10 @@ class ImportOut(BaseModel):
 
 def _import_account(db: Session, account_id: int) -> Account:
     account: Account = _get(db, Account, account_id, "account")
-    if account.tracking == "balance":
+    if account.tracking != "transactions":
         raise HTTPException(
             422,
-            "This account is tracked by balance, so it has no transactions to import.",
+            "This account is tracked by value, so it has no transactions to import.",
         )
     return account
 

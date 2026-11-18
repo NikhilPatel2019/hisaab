@@ -133,7 +133,7 @@ textarea.field { padding: 12px 14px; min-height: 80px; resize: vertical; }
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; justify-content: space-around;
     background: var(--header); backdrop-filter: blur(12px); border-top: 1px solid var(--sep); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
   }
-  .nav-mobile a { min-height: 44px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; font-weight: 600; color: var(--ink3); text-decoration: none; border-radius: 999px; }
+  .nav-mobile a { flex: none; min-height: 44px; display: flex; align-items: center; padding: 0 8px; font-size: 13px; font-weight: 600; color: var(--ink3); text-decoration: none; border-radius: 999px; }
   .nav-mobile a[aria-current="page"] { color: var(--acc-ink); background: var(--acc-tint); }
   .page { padding-bottom: 96px; }
 }
@@ -165,4 +165,16 @@ a.icon-btn { text-decoration: none; }
 .conn { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--sep); }
 @media (max-width: 900px) {
   .grid > .stat { grid-column: span 6; }
+}
+
+/* Investments */
+.mix-bar { display: flex; gap: 2px; height: 14px; border-radius: 6px; overflow: hidden; background: var(--well); }
+.mix-bar span { display: block; height: 100%; min-width: 2px; }
+.mix-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; font-size: 14px; }
+.mix-legend li { display: flex; align-items: baseline; gap: 8px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+@media (max-width: 900px) {
+  /* Six sections don't fit every phone: let the bar scroll rather than cut one off. */
+  .nav-mobile { overflow-x: auto; justify-content: safe space-around; scrollbar-width: none; }
+  .nav-mobile::-webkit-scrollbar { display: none; }
 }

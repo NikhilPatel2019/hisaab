@@ -10,16 +10,20 @@ import sys
 import time
 from datetime import date
 from pathlib import Path
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from hisaab import __version__
 from hisaab.config import DEFAULT_DATABASE_URL, Settings, get_settings
 from hisaab.db import make_engine
 from hisaab.dburl import UnsupportedDatabaseError, normalize_database_url, redact
 from hisaab.secretstore import new_key
+
+if TYPE_CHECKING:
+    from hisaab.docs.vault import Vault
+    from hisaab.secretstore import SecretBox
 from hisaab.security import MIN_PASSWORD_LENGTH, UnsafeBindError, check_bind_safety, hash_password
 
 DB_CHOICES = {
@@ -334,6 +338,80 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def _invest_env() -> tuple[sessionmaker[Session], Vault, SecretBox | None]:
+    from hisaab.db import make_sessionmaker
+    from hisaab.docs.vault import Vault
+    from hisaab.secretstore import SecretBox
+
+    settings = get_settings()
+    factory = make_sessionmaker(make_engine(settings.database_url))
+    box = SecretBox(settings.secret_key) if settings.secret_key else None
+    return factory, Vault(settings.vault_dir), box
+
+
+def cmd_cas(args: argparse.Namespace) -> int:
+    from hisaab.invest import jobs
+
+    factory, vault, box = _invest_env()
+    summary = jobs.import_cas(factory, vault, box, _today(), retry_failed=args.retry)
+    print(f"✓ {summary.text()}")
+    return 1 if summary.failed else 0
+
+
+def cmd_prices(args: argparse.Namespace) -> int:
+    from hisaab.invest import jobs
+
+    factory, _vault, _box = _invest_env()
+    res = jobs.refresh_prices(factory, _today())
+    print(("✓ " if not res.errors else "! ") + res.text())
+    if args.backfill:
+        hist = jobs.backfill(factory, _today(), args.months)
+        print(f"✓ History: {hist['snapshots']} month-end values")
+        for e in hist["errors"]:
+            print(f"  ! {e}")
+    return 1 if res.errors else 0
+
+
+def cmd_cas_compat(args: argparse.Namespace) -> int:
+    """Does casparser read an unlocked copy exactly like the locked original?
+
+    Prints a verdict and counts only: never names, folios or amounts.
+    """
+    import casparser
+
+    password = (
+        sys.stdin.readline().rstrip("\n")
+        if args.password_stdin
+        else getpass.getpass("CAS password: ")
+    )
+    try:
+        a = casparser.read_cas_pdf(args.original, password, output="json")
+        b = casparser.read_cas_pdf(args.unlocked, "", output="json")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"✗ casparser couldn't read one of the files ({type(exc).__name__}).", file=sys.stderr
+        )
+        return 2
+    ja, jb = json.loads(a), json.loads(b)
+
+    def leaves(x: object, path: str = "") -> dict[str, object]:
+        if isinstance(x, dict):
+            return {k: v for key, val in x.items() for k, v in leaves(val, f"{path}.{key}").items()}
+        if isinstance(x, list):
+            return {k: v for i, val in enumerate(x) for k, v in leaves(val, f"{path}[{i}]").items()}
+        return {path: x}
+
+    la, lb = leaves(ja), leaves(jb)
+    differ = sorted(k for k in set(la) | set(lb) if la.get(k) != lb.get(k))
+    if not differ:
+        print(f"✓ Identical: {len(la)} values, casparser {casparser.__version__}.")
+        return 0
+    print(f"✗ {len(differ)} of {len(la)} values differ, casparser {casparser.__version__}.")
+    for k in differ[:10]:
+        print(f"  {k.lstrip('.')}")  # the field path only, never its value
+    return 1
+
+
 def cmd_openapi(_args: argparse.Namespace) -> int:
     from hisaab.main import create_app
 
@@ -385,6 +463,23 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--folder", help="bring in every PDF from a folder, once")
     g.add_argument("--reprocess", action="store_true", help="retry passwords and refile everything")
     g.set_defaults(func=cmd_ingest)
+
+    c = sub.add_parser("cas", help="read every CAS in the postbox into holdings")
+    c.add_argument("--retry", action="store_true", help="also retry ones that failed before")
+    c.set_defaults(func=cmd_cas)
+
+    pr = sub.add_parser("prices", help="fetch NAVs and closing prices, and revalue holdings")
+    pr.add_argument("--backfill", action="store_true", help="also fill in month-end history")
+    pr.add_argument("--months", type=int, default=24)
+    pr.set_defaults(func=cmd_prices)
+
+    cc = sub.add_parser(
+        "cas-compat", help="check casparser reads an unlocked copy exactly like the original"
+    )
+    cc.add_argument("original", help="the CAS exactly as the depository or RTA sent it")
+    cc.add_argument("unlocked", help="a copy with the password removed")
+    cc.add_argument("--password-stdin", action="store_true")
+    cc.set_defaults(func=cmd_cas_compat)
 
     sub.add_parser("openapi", help="print the API schema (used to type the web app)").set_defaults(
         func=cmd_openapi

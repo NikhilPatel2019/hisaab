@@ -15,7 +15,17 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from hisaab.ledger.balances import add_months
-from hisaab.models import Account, BalanceSnapshot, Category, Transaction
+from hisaab.models import (
+    E6,
+    Account,
+    BalanceSnapshot,
+    Category,
+    Holding,
+    Instrument,
+    InvestmentTxn,
+    Price,
+    Transaction,
+)
 
 MONTHS = 18
 
@@ -40,6 +50,7 @@ def remove_demo(session: Session) -> int:
         session.execute(delete(Transaction).where(Transaction.account_id.in_(ids)))
         session.execute(delete(BalanceSnapshot).where(BalanceSnapshot.account_id.in_(ids)))
         session.execute(delete(Account).where(Account.id.in_(ids)))
+    session.execute(delete(Instrument).where(Instrument.isin.like("DEMO%")))
     session.commit()
     return len(ids)
 
@@ -54,8 +65,8 @@ def load_demo(session: Session, today: date, seed: int = 2026) -> dict[str, int]
         "spend": ("Spending account", "bank", "transactions", "Demo Bank B", "9152", 5_000),
         "rewards": ("Rewards card", "credit_card", "transactions", "Demo Bank A", "7731", 0),
         "food": ("Food card", "credit_card", "transactions", "Demo Bank C", "3307", 0),
-        "mf": ("Mutual funds", "investment", "balance", "Via CAS", None, 0),
-        "shares": ("Shares", "investment", "balance", "Demo Broker", None, 0),
+        "mf": ("Mutual funds", "investment", "holdings", "Via CAS", None, 0),
+        "shares": ("Shares", "investment", "holdings", "Demo Broker", None, 0),
         "epf": ("EPF", "retirement", "balance", "EPFO", None, 0),
         "fd": ("Fixed deposit", "deposit", "balance", "Demo Bank A", None, 0),
     }
@@ -89,6 +100,7 @@ def load_demo(session: Session, today: date, seed: int = 2026) -> dict[str, int]
     salary = 1_20_000.0
     mf_value, shares_value, epf_value, fd_value = 0.0, 0.0, 2_10_000.0, 0.0
     snapshots: list[tuple[str, date, float]] = []
+    growth: list[tuple[date, date, float]] = []  # (SIP day, month end, the funds' growth)
 
     for i in range(MONTHS):
         month = add_months(start, i)
@@ -305,7 +317,9 @@ def load_demo(session: Session, today: date, seed: int = 2026) -> dict[str, int]
         # Balance-tracked accounts: one value per month.
         snap_day = min(month_end_safe(month), today)
         if snap_day >= month:
-            mf_value = (mf_value + 25_000) * (1 + rng.gauss(0.009, 0.03))
+            g = 1 + rng.gauss(0.016, 0.018)
+            mf_value = (mf_value + 25_000) * g
+            growth.append((day(month, 5), snap_day, g))
             shares_value = (shares_value + 8_000) * (1 + rng.gauss(0.008, 0.05))
             epf_value = epf_value + 7_800 + epf_value * 0.0825 / 12
             snapshots += [
@@ -350,6 +364,20 @@ def load_demo(session: Session, today: date, seed: int = 2026) -> dict[str, int]
                 source="demo",
             )
         )
+    # Holdings behind the two investment accounts, so the Investments page has something.
+    last_day = growth[-1][1]
+    mf_total = _demo_funds(session, accounts["mf"].id, growth)
+    shares_total = _demo_shares(session, accounts["shares"].id, last_day, shares_value)
+    snapshots = [
+        (
+            k,
+            on,
+            (mf_total if k == "mf" else shares_total) / 100
+            if on == last_day and k in ("mf", "shares")
+            else v,
+        )
+        for k, on, v in snapshots
+    ]
     for key, on, value in snapshots:
         session.add(
             BalanceSnapshot(
@@ -363,3 +391,104 @@ def load_demo(session: Session, today: date, seed: int = 2026) -> dict[str, int]
 def month_end_safe(d: date) -> date:
     nxt = add_months(d.replace(day=1), 1)
     return nxt - timedelta(days=1)
+
+
+# Fictional instruments: the ISINs start with DEMO so no real price feed ever matches them.
+DEMO_FUNDS = (
+    ("DEMOF0000001", "Nifty 50 Index Fund (demo)", "equity", 0.35, 150.0),
+    ("DEMOF0000002", "Flexi Cap Fund (demo)", "equity", 0.25, 80.0),
+    ("DEMOF0000003", "Short Duration Debt Fund (demo)", "debt", 0.25, 30.0),
+    ("DEMOF0000004", "Gold Savings Fund (demo)", "gold", 0.15, 20.0),
+)
+DEMO_SHARES = (
+    ("DEMOE0000001", "Stock A (demo)", "equity", 0.40, 1_500.0),
+    ("DEMOE0000002", "Stock B (demo)", "equity", 0.35, 820.0),
+    ("DEMOE0000003", "Nifty 50 ETF (demo)", "equity", 0.25, 260.0),
+)
+
+
+def _demo_instrument(session: Session, isin: str, name: str, kind: str, asset: str) -> Instrument:
+    inst = session.scalar(select(Instrument).where(Instrument.isin == isin))
+    if inst is None:
+        inst = Instrument(isin=isin, kind=kind, name=name, asset_class=asset)
+        session.add(inst)
+        session.flush()
+    return inst
+
+
+def _demo_funds(session: Session, account_id: int, growth: list[tuple[date, date, float]]) -> int:
+    """Monthly SIPs into four funds whose NAVs follow the account's growth."""
+    total = 0
+    as_of = growth[-1][1]
+    for isin, name, asset, weight, base in DEMO_FUNDS:
+        inst = _demo_instrument(session, isin, name, "mf", asset)
+        nav, units, cost = base, 0.0, 0
+        for n, (sip_day, month_end, g) in enumerate(growth):
+            amount = round(25_000 * weight, 2)
+            bought = round(amount / nav, 3)
+            units = round(units + bought, 3)
+            cost += _rupees(amount)
+            session.add(
+                InvestmentTxn(
+                    account_id=account_id,
+                    instrument_id=inst.id,
+                    folio="",
+                    txn_date=sip_day,
+                    type="PURCHASE_SIP",
+                    description=f"SIP Purchase - Instalment {n + 1}",
+                    units_e6=round(bought * E6),
+                    price_e6=round(nav * E6),
+                    amount_paise=_rupees(amount),
+                    balance_e6=round(units * E6),
+                    dedupe_hash=f"demo-{isin}-{n}",
+                )
+            )
+            nav = round(nav * g, 4)
+            session.add(
+                Price(
+                    instrument_id=inst.id,
+                    price_date=month_end,
+                    price_e6=round(nav * E6),
+                    source="cas",
+                )
+            )
+        value = round(units * nav * 100)
+        total += value
+        session.add(
+            Holding(
+                account_id=account_id,
+                instrument_id=inst.id,
+                folio="",
+                as_of=as_of,
+                units_e6=round(units * E6),
+                price_e6=round(nav * E6),
+                value_paise=value,
+                cost_paise=cost,
+            )
+        )
+    return total
+
+
+def _demo_shares(session: Session, account_id: int, as_of: date, value: float) -> int:
+    total = 0
+    for isin, name, asset, weight, price in DEMO_SHARES:
+        inst = _demo_instrument(session, isin, name, "equity", asset)
+        qty = max(1, round(value * weight / price))
+        worth = round(qty * price * 100)
+        total += worth
+        session.add(
+            Price(instrument_id=inst.id, price_date=as_of, price_e6=round(price * E6), source="cas")
+        )
+        session.add(
+            Holding(
+                account_id=account_id,
+                instrument_id=inst.id,
+                folio="",
+                as_of=as_of,
+                units_e6=qty * E6,
+                price_e6=round(price * E6),
+                value_paise=worth,
+                cost_paise=round(8_000 * MONTHS * weight * 100 * 0.85),
+            )
+        )
+    return total
