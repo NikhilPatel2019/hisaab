@@ -459,13 +459,48 @@ def run_connector(
 
 
 class Runner:
-    """Runs connections one at a time in a background thread."""
+    """Runs connections, and other long jobs, one at a time in a background thread."""
 
-    def __init__(self, factory: sessionmaker[Session], vault: Vault, box: SecretBox | None) -> None:
+    def __init__(
+        self,
+        factory: sessionmaker[Session],
+        vault: Vault,
+        box: SecretBox | None,
+        after_sync: Callable[[], None] | None = None,
+    ) -> None:
         self.factory, self.vault, self.box = factory, vault, box
+        self.after_sync = after_sync  # e.g. read any new CAS that a sync brought in
         self._lock = threading.Lock()
         self.current: str | None = None
         self.started_at: datetime | None = None
+
+    def start_job(self, label: str, fn: Callable[[], object], *, wait: bool = False) -> bool:
+        """Run `fn` in the background unless something else is running."""
+        if not self._lock.acquire(blocking=False):
+            return False
+        self.started_at = datetime.now(UTC)
+        self.current = label
+        thread = threading.Thread(
+            target=self._job, args=(label, fn), name="hisaab-job", daemon=True
+        )
+        try:
+            thread.start()
+        except RuntimeError:
+            self._lock.release()
+            raise
+        if wait:
+            thread.join()
+        return True
+
+    def _job(self, label: str, fn: Callable[[], object]) -> None:
+        try:
+            fn()
+        except Exception:  # noqa: BLE001
+            log.error("%s failed", label, exc_info=True)
+        finally:
+            self.current = None
+            self.started_at = None
+            self._lock.release()
 
     @property
     def running(self) -> bool:
@@ -497,6 +532,12 @@ class Runner:
                     run_connector(self.factory, self.vault, self.box, cid)
                 except Exception:  # noqa: BLE001
                     log.error("Connection %s failed", cid, exc_info=True)
+            if self.after_sync:
+                self.current = "Reading new statements"
+                try:
+                    self.after_sync()
+                except Exception:  # noqa: BLE001
+                    log.error("After-sync step failed", exc_info=True)
         finally:
             self.current = None
             self.started_at = None

@@ -82,7 +82,7 @@ ACCOUNT_KINDS = (
     "other_liability",
 )
 LIABILITY_KINDS = frozenset({"credit_card", "loan", "other_liability"})
-TRACKING_MODES = ("transactions", "balance")
+TRACKING_MODES = ("transactions", "balance", "holdings")
 CATEGORY_KINDS = ("expense", "income", "transfer", "investment")
 TXN_SOURCES = ("manual", "csv", "demo", "restore", "statement")
 
@@ -95,6 +95,7 @@ class Account(Base):
     kind: Mapped[str] = mapped_column(String(20))
     # "transactions": balance = opening + sum of transactions.
     # "balance": you record what it's worth now and then (EPF, FD, a house).
+    # "holdings": units of funds and shares from your CAS, valued at market prices.
     tracking: Mapped[str] = mapped_column(String(20), default="transactions")
     institution: Mapped[str | None] = mapped_column(String(100), nullable=True)
     mask: Mapped[str | None] = mapped_column(String(8), nullable=True)
@@ -103,6 +104,9 @@ class Account(Base):
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Links an account to where it comes from (a demat account, an investor's MF folios),
+    # as a hash: account numbers themselves are never stored.
+    external_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     transactions: Mapped[list[Transaction]] = relationship(
@@ -291,3 +295,108 @@ class DocRule(Base):
         ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# --- investments: instruments, holdings from CAS, prices ----------------------------------------
+
+INSTRUMENT_KINDS = ("mf", "equity", "bond", "nps", "other")
+ASSET_CLASSES = ("equity", "debt", "hybrid", "gold", "other")
+PRICE_SOURCES = ("cas", "amfi", "mfapi", "nse", "bse", "manual")
+# Units and prices are stored as whole numbers of millionths, so they stay exact on every
+# database (SQLite has no true decimal type). Values stay in paise like the rest of the ledger.
+E6 = 1_000_000
+
+
+class Instrument(Base):
+    """A fund, share, bond or NPS scheme, identified by its ISIN."""
+
+    __tablename__ = "instruments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    isin: Mapped[str] = mapped_column(String(20), unique=True)
+    kind: Mapped[str] = mapped_column(String(10), default="other")
+    name: Mapped[str] = mapped_column(String(200))
+    amfi_code: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    symbol: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    asset_class: Mapped[str] = mapped_column(String(10), default="other")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Holding(Base):
+    """What an account held on a statement date. A CAS lists everything an account holds,
+    so an account's latest holdings are the rows of its latest date."""
+
+    __tablename__ = "holdings"
+    __table_args__ = (UniqueConstraint("account_id", "instrument_id", "folio", "as_of"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"))
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id", ondelete="CASCADE"))
+    folio: Mapped[str] = mapped_column(String(40), default="")
+    as_of: Mapped[date] = mapped_column(Date)
+    units_e6: Mapped[int] = mapped_column(BigInteger)
+    price_e6: Mapped[int] = mapped_column(BigInteger)
+    value_paise: Mapped[int] = mapped_column(BigInteger)
+    cost_paise: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+
+
+class Price(Base):
+    """One closing price (or NAV) per instrument per day."""
+
+    __tablename__ = "prices"
+    __table_args__ = (UniqueConstraint("instrument_id", "price_date"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id", ondelete="CASCADE"))
+    price_date: Mapped[date] = mapped_column(Date)
+    price_e6: Mapped[int] = mapped_column(BigInteger)
+    source: Mapped[str] = mapped_column(String(10))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class InvestmentTxn(Base):
+    """A purchase, redemption, switch or dividend from a detailed CAMS/KFintech CAS."""
+
+    __tablename__ = "investment_txns"
+    __table_args__ = (UniqueConstraint("account_id", "dedupe_hash"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"))
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id", ondelete="CASCADE"))
+    folio: Mapped[str] = mapped_column(String(40), default="")
+    txn_date: Mapped[date] = mapped_column(Date)
+    type: Mapped[str] = mapped_column(String(24))
+    description: Mapped[str] = mapped_column(String(200))
+    units_e6: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    price_e6: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    amount_paise: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    balance_e6: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    dedupe_hash: Mapped[str] = mapped_column(String(64))
+    document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+
+
+class CasImport(Base):
+    """The result of reading one CAS document: what came in, and any warnings to show."""
+
+    __tablename__ = "cas_imports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), unique=True
+    )
+    file_type: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    period_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(12))  # ok | warnings | failed
+    message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    warnings: Mapped[str] = mapped_column(Text, default="[]")
+    holdings: Mapped[int] = mapped_column(Integer, default=0)
+    txns: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )

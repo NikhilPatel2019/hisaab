@@ -7,6 +7,7 @@ import { ACCOUNT_KINDS, compact, money, parseRupees, shortDate, todayISO } from 
 import { useAsync } from "../hooks";
 import { Link, navigate } from "../router";
 import { AccountForm } from "./Accounts";
+import { HoldingsTable } from "./Invest";
 import { TxnTable } from "./Transactions";
 
 export function AccountDetail({ id }: { id: number }) {
@@ -80,16 +81,18 @@ export function AccountDetail({ id }: { id: number }) {
 
       <div className="grid">
         <section className="hero s8" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span className="cap">{owed ? "You owe" : a.tracking === "balance" ? "Worth now" : "Balance"}</span>
+          <span className="cap">{owed ? "You owe" : a.tracking === "transactions" ? "Balance" : "Worth now"}</span>
           <span className="d n" style={{ fontSize: 52, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1 }}>
             {money(owed ? -a.balance_paise : a.balance_paise)}
           </span>
           <span className="sub">
-            {a.tracking === "balance"
-              ? "Tracked by value. Update it whenever you check — monthly is plenty."
-              : `${a.transactions} transactions · opening balance ${money(a.opening_balance_paise)}`}
+            {a.tracking === "holdings"
+              ? "Units from your CAS, valued at the latest NAVs and closing prices."
+              : a.tracking === "balance"
+                ? "Tracked by value. Update it whenever you check — monthly is plenty."
+                : `${a.transactions} transactions · opening balance ${money(a.opening_balance_paise)}`}
           </span>
-          {a.tracking === "balance" && snaps.data && snaps.data.length > 1 && (
+          {a.tracking !== "transactions" && snaps.data && snaps.data.length > 1 && (
             <LineChart
               height={180}
               labels={[...snaps.data].reverse().map((s) => shortDate(s.as_of))}
@@ -100,8 +103,24 @@ export function AccountDetail({ id }: { id: number }) {
             />
           )}
         </section>
-        <SnapshotPanel accountId={a.id} tracking={a.tracking} snaps={snaps.data ?? []} onSaved={reload} />
+        {a.tracking === "holdings" ? (
+          <section className="card s4 stack" aria-labelledby="valued">
+            <h2 id="valued" className="d h2">
+              How it’s valued
+            </h2>
+            <p className="body" style={{ margin: 0 }}>
+              Each CAS replaces this account’s holdings for its date, exactly as printed. In between, funds follow AMFI’s
+              NAV and shares the exchange close.
+            </p>
+            <Link href="/invest" className="btns" style={{ alignSelf: "flex-start" }}>
+              All investments
+            </Link>
+          </section>
+        ) : (
+          <SnapshotPanel accountId={a.id} tracking={a.tracking === "balance" ? "balance" : "transactions"} snaps={snaps.data ?? []} onSaved={reload} />
+        )}
       </div>
+      {a.tracking === "holdings" && <AccountHoldings accountId={a.id} />}
 
       {a.tracking === "transactions" && <TxnTable accountId={a.id} onChanged={account.reload} />}
       {editing && (
@@ -186,5 +205,17 @@ function SnapshotPanel({
         })}
       </div>
     </section>
+  );
+}
+
+function AccountHoldings({ accountId }: { accountId: number }) {
+  const p = useAsync(() => ok(client.GET("/api/investments", { params: { query: { account_id: accountId } } })), [accountId]);
+  if (p.error) return <ErrorBox message={p.error} onRetry={p.reload} />;
+  if (!p.data) return <Loading />;
+  if (!p.data.holdings.length) return <p className="sub">No holdings in the latest statement.</p>;
+  return (
+    <div className="grid">
+      <HoldingsTable holdings={p.data.holdings} total={p.data.total_paise} today={p.data.as_of} />
+    </div>
   );
 }

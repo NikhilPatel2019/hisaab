@@ -7,6 +7,7 @@ import re
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from fastapi import (
     APIRouter,
@@ -36,6 +37,7 @@ from hisaab.docs.connectors import (
 from hisaab.docs.ingest import MANUAL, Context, Incoming, ingest, reprocess, status_for
 from hisaab.docs.pdf import decrypted_copy
 from hisaab.docs.vault import Vault, VaultError, sha256_of
+from hisaab.invest import jobs as invest_jobs
 from hisaab.ledger.api import _Patch
 from hisaab.models import (
     DOC_KINDS,
@@ -93,6 +95,19 @@ def _get(db: Session, model: type[Any], id_: int, what: str) -> Any:
     if obj is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No {what} with id {id_}.")
     return obj
+
+
+def kick_cas_import(request: Request, db: Session) -> None:
+    """If the postbox now holds a CAS we haven't read, read it in the background."""
+    from hisaab.invest.importer import pending
+
+    if not request.app.state.settings.auto_import_cas or not pending(db):
+        return
+    factory, vault, box = request.app.state.sessionmaker, vault_of(request), optional_box(request)
+    on = datetime.now(ZoneInfo(request.app.state.settings.timezone)).date()
+    runner_of(request).start_job(
+        "Reading CAS files", lambda: invest_jobs.import_cas(factory, vault, box, on)
+    )
 
 
 # --- documents --------------------------------------------------------------------------------
@@ -351,6 +366,7 @@ def upload_documents(
                 or ("Already in your postbox." if r.outcome in ("seen", "duplicate") else None),
             )
         )
+    kick_cas_import(request, db)
     return out
 
 
@@ -442,7 +458,7 @@ class DocumentPatch(_Patch):
 
 
 @router.patch("/documents/{doc_id}")
-def patch_document(db: Db, doc_id: int, body: DocumentPatch) -> DocumentOut:
+def patch_document(request: Request, db: Db, doc_id: int, body: DocumentPatch) -> DocumentOut:
     d: Document = _get(db, Document, doc_id, "document")
     fields = body.model_fields_set
     if "account_id" in fields and body.account_id is not None:
@@ -463,6 +479,8 @@ def patch_document(db: Db, doc_id: int, body: DocumentPatch) -> DocumentOut:
     elif d.status != "ignored":
         d.status = status_for(d)
     db.commit()
+    if d.kind == "cas":
+        kick_cas_import(request, db)
     return _doc_out(db, d)
 
 
@@ -505,6 +523,7 @@ def unlock_document(
     db.commit()
     counts = reprocess(db, vault, box, only_locked=True)
     db.refresh(d)
+    kick_cas_import(request, db)
     return UnlockResult(
         opened=True, also_unlocked=max(0, counts["unlocked"] - 1), document=_doc_out(db, d)
     )
@@ -518,7 +537,9 @@ class ReprocessResult(BaseModel):
 
 @router.post("/documents/reprocess")
 def reprocess_documents(request: Request, db: Db) -> ReprocessResult:
-    return ReprocessResult(**reprocess(db, vault_of(request), optional_box(request)))
+    result = ReprocessResult(**reprocess(db, vault_of(request), optional_box(request)))
+    kick_cas_import(request, db)
+    return result
 
 
 # --- statement passwords ----------------------------------------------------------------------
@@ -576,6 +597,7 @@ def put_facts(request: Request, db: Db, box: Box, body: FactsBody) -> PasswordSt
         except passwords.FactError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from None
     counts = reprocess(db, vault_of(request), box, only_locked=True)
+    kick_cas_import(request, db)
     return _password_state(db, counts["unlocked"])
 
 
@@ -588,6 +610,7 @@ class PasswordBody(BaseModel):
 def add_statement_password(request: Request, db: Db, box: Box, body: PasswordBody) -> PasswordState:
     passwords.add_password(db, box, body.label, body.password)
     counts = reprocess(db, vault_of(request), box, only_locked=True)
+    kick_cas_import(request, db)
     return _password_state(db, counts["unlocked"])
 
 

@@ -5,6 +5,7 @@ import { AccountDetail } from "./pages/AccountDetail";
 import { Accounts } from "./pages/Accounts";
 import { Home } from "./pages/Home";
 import { Import } from "./pages/Import";
+import { Invest } from "./pages/Invest";
 import { Postbox } from "./pages/Postbox";
 import { Settings } from "./pages/Settings";
 import { Transactions } from "./pages/Transactions";
@@ -161,6 +162,7 @@ function SetupNeeded({ toggle }: { toggle: React.ReactNode }) {
 const NAV: [string, string][] = [
   ["Home", "/"],
   ["Accounts", "/accounts"],
+  ["Invest", "/invest"],
   ["Transactions", "/transactions"],
   ["Postbox", "/postbox"],
   ["Import", "/import"],
@@ -176,6 +178,7 @@ function Shell({ toggle, onLogout }: { toggle: React.ReactNode; onLogout: () => 
   else if (path === "/transactions") page = <Transactions />;
   else if (path === "/import") page = <Import />;
   else if (path === "/postbox") page = <Postbox />;
+  else if (path === "/invest") page = <Invest />;
   else if (path === "/settings") page = <Settings onLogout={onLogout} />;
   else
     page = (

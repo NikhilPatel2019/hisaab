@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # Where original statements are kept, named by their SHA-256. Back this folder up.
     vault_dir: str = "./data/vault"
 
+    # Read a CAS into holdings as soon as it lands in the postbox.
+    auto_import_cas: bool = True
+
     # Used for "today" (month boundaries, the dashboard).
     timezone: str = "Asia/Kolkata"
 

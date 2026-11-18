@@ -15,7 +15,19 @@ from hisaab.config import Settings
 from hisaab.ledger.backup import wipe_ledger
 from hisaab.main import create_app
 from hisaab.migrate import downgrade, upgrade
-from hisaab.models import AppMeta, Connector, DocRule, Document, DocumentSighting, Secret
+from hisaab.models import (
+    AppMeta,
+    CasImport,
+    Connector,
+    DocRule,
+    Document,
+    DocumentSighting,
+    Holding,
+    Instrument,
+    InvestmentTxn,
+    Price,
+    Secret,
+)
 from hisaab.secretstore import new_key
 from hisaab.security import hash_password
 
@@ -49,13 +61,24 @@ def settings(db_url: str, password_hash: str, tmp_path: Path) -> Settings:
         session_secret="test-session-secret-" + "x" * 32,
         secret_key=new_key(),
         vault_dir=str(tmp_path / "vault"),
+        auto_import_cas=False,  # tests that want it switch it on
     )
 
 
 def wipe_all(s: Session) -> None:
-    for model in (DocumentSighting, Document, Connector, DocRule):
+    for model in (
+        CasImport,
+        Holding,
+        InvestmentTxn,
+        Price,
+        Instrument,
+        DocumentSighting,
+        Document,
+        Connector,
+        DocRule,
+    ):
         s.execute(delete(model))
-    s.execute(delete(AppMeta).where(AppMeta.name.like("unlock.%")))
+    s.execute(delete(AppMeta).where(AppMeta.name.like("unlock.%") | AppMeta.name.like("invest.%")))
     s.execute(delete(Secret))
     wipe_ledger(s)
     s.commit()

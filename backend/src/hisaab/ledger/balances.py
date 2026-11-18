@@ -66,7 +66,7 @@ def balances_on(session: Session, on: date) -> dict[int, int]:
     )
     out: dict[int, int] = {}
     for a in accounts:
-        if a.tracking == "balance":
+        if a.tracking in ("balance", "holdings"):
             out[a.id] = int(snaps.get(a.id, 0))
         else:
             out[a.id] = int(a.opening_balance_paise + sums.get(a.id, 0))

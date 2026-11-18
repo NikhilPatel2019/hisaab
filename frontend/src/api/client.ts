@@ -18,6 +18,8 @@ export type DocKind = Doc["kind"];
 export type UploadResult = S["UploadResult"];
 export type Connector = S["ConnectorOut"];
 export type PasswordState = S["PasswordState"];
+export type Portfolio = S["Portfolio"];
+export type HoldingRow = S["HoldingOut"];
 
 const csrf: Middleware = {
   onRequest({ request }) {

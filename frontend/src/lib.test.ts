@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiError, request } from "./api";
 import { niceTicks } from "./components/Charts";
 import { arrivedFrom, docFrom, docTitle, sizeLabel } from "./docs";
+import { gainLabel, gainParts, holdingSource, pctLabel, unitsLabel } from "./invest";
 import { compact, formatINR, money, parseRupees, todayISO } from "./format";
 import { match } from "./router";
 
@@ -106,5 +107,25 @@ describe("postbox labels", () => {
     expect(sizeLabel(900)).toBe("900 B");
     expect(sizeLabel(48_000)).toBe("47 KB");
     expect(sizeLabel(3_400_000)).toBe("3.2 MB");
+  });
+});
+
+describe("investment labels", () => {
+  it("shows gains with a direction, never colour alone", () => {
+    expect(gainLabel(9_890_000, 81_200_000)).toBe("▲ ₹98,900 · 12.2%");
+    expect(gainLabel(-400_000, 12_900_000)).toBe("▼ ₹4,000 · 3.1%");
+    expect(gainLabel(null, 100)).toBeNull();
+    expect(gainLabel(100, 0)).toBeNull();
+    expect(gainParts(-400_000, 12_900_000)).toEqual({ amount: "▼ ₹4,000", pct: "−3.1%" });
+  });
+  it("says where a holding comes from", () => {
+    expect(holdingSource({ kind: "mf", account_name: "Mutual funds", folio: "••7890", name: "Demo Fund" })).toBe("Fund · Mutual funds · folio ••7890");
+    expect(holdingSource({ kind: "equity", account_name: "Demat", folio: null, name: "Demo Gold ETF" })).toBe("ETF · Demat");
+  });
+  it("formats units and percentages", () => {
+    expect(unitsLabel("1034.912")).toBe("1,034.912");
+    expect(unitsLabel("120000")).toBe("1,20,000");
+    expect(pctLabel(13.437)).toBe("13.4%");
+    expect(pctLabel(null)).toBeNull();
   });
 });

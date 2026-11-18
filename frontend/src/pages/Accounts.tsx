@@ -94,7 +94,7 @@ function AccountRow({ a }: { a: Account }) {
           {a.archived && <Chip>Archived</Chip>}
         </span>
         <span className="sub">
-          {[a.institution, a.tracking === "balance" ? "value updated by hand" : `${a.transactions} transactions`, a.last_activity ? `last ${shortDate(a.last_activity)}` : null]
+          {[a.institution, a.tracking === "balance" ? "value updated by hand" : a.tracking === "holdings" ? "from your CAS" : `${a.transactions} transactions`, a.last_activity ? `last ${shortDate(a.last_activity)}` : null]
             .filter(Boolean)
             .join(" · ")}
         </span>

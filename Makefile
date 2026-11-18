@@ -1,6 +1,6 @@
 BACKEND := uv run --project backend
 
-.PHONY: help setup dev dev-api dev-web run demo ingest backup gen-api test test-api test-web lint fix build docker-setup docker-up
+.PHONY: help setup dev dev-api dev-web run demo ingest prices backup gen-api test test-api test-web lint fix build docker-setup docker-up
 
 help: ## show this list
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-13s %s\n", $$1, $$2}'
@@ -28,6 +28,9 @@ demo: ## load a fictional household to explore (remove with: hisaab demo --remov
 
 ingest: ## fetch new statements from your connections (run it nightly from cron)
 	$(BACKEND) hisaab ingest
+
+prices: ## fetch NAVs and closing prices, and revalue your holdings
+	$(BACKEND) hisaab prices
 
 backup: ## write a JSON backup to backups/
 	mkdir -p backups
